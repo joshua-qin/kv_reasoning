@@ -1,0 +1,17 @@
+{
+  "single_agent": {
+    "accuracy": 0.78,
+    "total_tokens": 14642,
+    "n": 50
+  },
+  "text_debate": {
+    "accuracy": 0.68,
+    "total_tokens": 47105,
+    "n": 50
+  },
+  "kv_rag": {
+    "accuracy": 0.04,
+    "total_tokens": 43901,
+    "n": 50
+  }
+}
