@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Run the initial KV Cache RAG experiment: single-agent, text-only two-agent, and KV-cache RAG.
+Run the initial KV Cache RAG experiment: single-agent, text-only two-agent, KV-cache RAG, and full-stitch latent collaboration.
 Reports accuracy and token usage on GSM8K (subset).
 
 Rough timing on A100 (Qwen2-7B, 384 max_new_tokens):
-  - Single agent:   ~1–2 min per 10 examples  (~5–10 min for 50)
-  - Text debate:    ~2–4 min per 10 examples  (~10–20 min for 50)
-  - KV RAG:         ~3–6 min per 10 examples (~15–30 min for 50)
-  Total for 50 × 3 methods: ~30–60 min. Run one method at a time with
-  --methods single, then --methods text_debate, then --methods kv_rag
-  and use the same --output to accumulate results.
+  - Single agent:        ~1–2 min per 10 examples  (~5–10 min for 50)
+  - Text debate:         ~2–4 min per 10 examples  (~10–20 min for 50)
+  - KV RAG:              ~3–6 min per 10 examples (~15–30 min for 50)
+  - Latent full-stitch:  ~4–8 min per 10 examples (longer context = more memory/time)
+  Run one method at a time with --methods <name> and use the same --output to accumulate results.
+  Methods: single, text_debate, kv_rag, latent_full_stitch.
 """
 
 import argparse
@@ -45,7 +45,7 @@ from src.eval_gsm8k import (
     load_gsm8k,
 )
 from src.baselines import single_agent_cot, two_agent_text_debate
-from src.kv_cache_rag import two_agent_kv_rag_round
+from src.kv_cache_rag import two_agent_kv_rag_round, two_agent_kv_full_stitch_round
 
 
 def load_model_and_tokenizer(model_name: str, device: torch.device, load_8bit: bool = False):
@@ -109,7 +109,7 @@ def main():
         type=str,
         nargs="+",
         default=["single", "text_debate", "kv_rag"],
-        help="Which methods to run: single, text_debate, kv_rag",
+        help="Which methods to run: single, text_debate, kv_rag, latent_full_stitch",
     )
     parser.add_argument(
         "--start_idx",
@@ -281,6 +281,45 @@ def main():
         results["kv_rag"] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
         elapsed = time.perf_counter() - t0
         log.info("  [kv_rag] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", acc * 100, total_tokens, elapsed)
+        if args.output:
+            with open(args.output, "w") as f:
+                json.dump(results, f, indent=2)
+            log.info("  Saved to %s", args.output)
+        _flush()
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
+    # Full-stitch latent collaboration (no retrieval: entire cache A→B and B→A)
+    if "latent_full_stitch" in args.methods:
+        log.info("")
+        log.info("--- Two-agent full-stitch latent collaboration ---")
+        t0 = time.perf_counter()
+        preds = []
+        total_tokens = 0
+        for i, ex in enumerate(dataset):
+            log.info("  [latent_full_stitch] example %d/%d ...", i + 1, len(dataset))
+            _flush()
+            question = ex["question"]
+            gold = ex["answer"].split("####")[-1].strip()
+            text_a, text_b, n_tok = two_agent_kv_full_stitch_round(
+                model,
+                tokenizer,
+                question,
+                device,
+                max_new_tokens_round1=args.max_new_tokens,
+                max_new_tokens_round2=min(128, args.max_new_tokens),
+            )
+            total_tokens += n_tok
+            pred_text = text_b if text_b else text_a
+            preds.append((pred_text, gold))
+            if (i + 1) % 10 == 0:
+                elapsed = time.perf_counter() - t0
+                log.info("  [latent_full_stitch] %d/%d done in %.0fs (%.1fs/ex)", i + 1, len(dataset), elapsed, elapsed / (i + 1))
+                _flush()
+        acc, n = evaluate_gsm8k(preds)
+        results["latent_full_stitch"] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
+        elapsed = time.perf_counter() - t0
+        log.info("  [latent_full_stitch] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", acc * 100, total_tokens, elapsed)
         if args.output:
             with open(args.output, "w") as f:
                 json.dump(results, f, indent=2)

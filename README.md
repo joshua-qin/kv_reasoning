@@ -21,9 +21,11 @@ We test a **training-free**, **latent-space** multi-agent reasoning setup: two "
    Run the model with `use_cache=True`, collect `past_key_values` per layer for each agent’s first-round generation.
 
 2. **KV cache “RAG” (retrieval)**  
-   - **Query**: Current agent’s last-layer query vector (or last token’s query) from its latest state.  
-   - **Keys**: Keys from the other agent’s cache (e.g. last layer, or mean over layers).  
-   - **Retrieval**: Score each position in the other’s cache by dot-product (or cosine) of query vs key; take **top-k** positions (e.g. k=32 or 64) to limit context.
+   - **Query**: Mean of the **last N keys** (default N=8) at the last layer — a stable summary of “where this agent is” rather than a single token.  
+   - **Keys**: Keys from the other agent’s cache at the last layer.  
+   - **Search region**: By default we only score positions **after the other agent’s prompt** (`min_position = prompt_length`), so we retrieve from the other’s *reasoning* (CoT), not the shared problem text.  
+   - **Scoring**: **Cosine similarity** (L2-normalize query and keys, then dot product) so magnitude doesn’t dominate; optionally raw dot product.  
+   - **Selection**: Either **top-k** positions (sorted by index) or one **contiguous chunk** of length k centered on the best-scoring position (default), so the model sees coherent context.
 
 3. **Stitching**  
    For the second round, we **prepend** the selected key-value pairs (with adjusted positions) to the current agent’s cache so that the next forward pass "sees" the retrieved latent reasoning. Position handling: we assign a contiguous range of positions to the retrieved block (e.g. 0 to k-1) and offset the agent’s own continuation accordingly.
