@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from typing import List, Tuple, Optional, Any
 
 from .rope_utils import reencode_past_kvs_for_stitching
+from .eval_gsm8k import extract_answer_gsm8k, normalize_answer
 
 # past_key_values: tuple of (key, value) per layer
 # key, value: (batch, num_heads, seq_len, head_dim)
@@ -283,11 +284,13 @@ def continue_with_cache(
     position_offset: int,
     max_new_tokens: int = 256,
     do_sample: bool = False,
-) -> torch.LongTensor:
+    return_cache: bool = False,
+):
     """
     Run generation using existing past_key_values. prompt_ids here are the *new* tokens
     to continue with (e.g. a short string like " Let me refine my reasoning: ").
     position_offset: length of the sequence already in past_key_values (so we set position_ids correctly).
+    If return_cache is True, returns (generated, final_past_kvs_tuple); else returns generated only.
     """
     model.eval()
     device = next(model.parameters()).device
@@ -348,6 +351,9 @@ def continue_with_cache(
             if next_token.item() == tokenizer.eos_token_id:
                 break
 
+    if return_cache:
+        final_tuple = _to_past_kvs_tuple(past_key_values)
+        return generated, final_tuple
     return generated
 
 
@@ -557,3 +563,117 @@ def two_agent_kv_full_stitch_round(
     text_a = round1_a + " " + round2_a
     text_b = round1_b + " " + round2_b
     return text_a, text_b, total_tokens
+
+
+# --- 5 heterogeneous agents, 3 rounds, full-stitch from best agent each round ---
+
+def _default_heterogeneous_prompts() -> List[str]:
+    """Five distinct agent roles for diverse reasoning."""
+    return [
+        "You are agent 1. You are methodical. Work step by step and show every calculation. Give your final answer.",
+        "You are agent 2. You focus on key quantities first, then fill in details. Be concise but correct. Give your final answer.",
+        "You are agent 3. You double-check each step and look for alternative approaches. Give your final answer.",
+        "You are agent 4. You prefer setting up equations and solving them. Show your work. Give your final answer.",
+        "You are agent 5. You reason in plain language first, then compute. Give your final answer.",
+    ]
+
+
+def _pick_best_agent_by_agreement(texts: List[str]) -> int:
+    """
+    Among agents that produced an answer, pick the one whose answer agrees with the most others.
+    Ties: prefer lower index. Returns 0 if no one has a parseable answer.
+    """
+    answers = [normalize_answer(extract_answer_gsm8k(t)) for t in texts]
+    n = len(answers)
+    best_idx = 0
+    best_count = -1
+    for i in range(n):
+        if not answers[i]:
+            continue
+        count = sum(1 for j in range(n) if answers[j] and answers[i] == answers[j])
+        if count > best_count:
+            best_count = count
+            best_idx = i
+    return best_idx
+
+
+def five_agent_three_round_full_stitch(
+    model: Any,
+    tokenizer: Any,
+    question: str,
+    device: torch.device,
+    num_agents: int = 5,
+    num_rounds: int = 3,
+    max_new_tokens_round1: int = 256,
+    max_new_tokens_refine: int = 128,
+    system_prompt: str = "You are a precise reasoner. Solve the following problem.",
+    agent_prompts: Optional[List[str]] = None,
+) -> Tuple[List[str], int]:
+    """
+    Five heterogeneous agents, 3 rounds. Each round after the first: each agent gets a full-stitch
+    KV cache from the best agent of the previous round ( [best_cache; own_cache] ), then refines.
+    Best agent = whose answer agrees with the most others (by extracted numeric answer).
+    Returns (list of 5 final response texts, total_tokens).
+    """
+    if agent_prompts is None:
+        agent_prompts = _default_heterogeneous_prompts()
+    agent_prompts = agent_prompts[:num_agents]
+    assert len(agent_prompts) >= num_agents, "Need at least num_agents prompts"
+
+    config = getattr(model, "config", model.model.config)
+    cont_prompt = " Refining: "
+    cont_ids = tokenizer(cont_prompt, return_tensors="pt").input_ids.to(device)
+    if cont_ids.shape[1] == 0:
+        cont_ids = tokenizer("Refining:", return_tensors="pt").input_ids.to(device)
+
+    total_tokens = 0
+    # Round 1: each agent does independent CoT
+    generated_list: List[torch.LongTensor] = []
+    cache_list: List[PastKVs] = []
+    for i in range(num_agents):
+        prompt = f"{system_prompt}\n\n{agent_prompts[i]}\n\nProblem: {question}\n\nReasoning:"
+        ids = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).input_ids.to(device)
+        generated, cache_raw = get_full_kv_cache(
+            model, tokenizer, ids, device, max_new_tokens=max_new_tokens_round1
+        )
+        generated_list.append(generated)
+        cache_list.append(_to_past_kvs_tuple(cache_raw))
+        total_tokens += generated.shape[1]
+    texts_so_far = [tokenizer.decode(g[0], skip_special_tokens=True) for g in generated_list]
+    best_idx = _pick_best_agent_by_agreement(texts_so_far)
+
+    for round_no in range(2, num_rounds + 1):
+        best_cache = cache_list[best_idx]
+        len_best = best_cache[0][0].shape[2]
+        new_generated_list: List[torch.LongTensor] = []
+        new_cache_list: List[PastKVs] = []
+        for i in range(num_agents):
+            own_cache = cache_list[i]
+            stitch = stitch_and_reencode_caches(
+                best_cache,
+                own_cache,
+                torch.arange(len_best, device=device, dtype=torch.long),
+                config,
+                device,
+            )
+            len_stitch = len_best + own_cache[0][0].shape[2]
+            out, new_cache = continue_with_cache(
+                model,
+                tokenizer,
+                cont_ids,
+                stitch,
+                position_offset=len_stitch,
+                max_new_tokens=max_new_tokens_refine,
+                return_cache=True,
+            )
+            total_tokens += out.shape[1]
+            new_generated_list.append(out)
+            new_cache_list.append(new_cache)
+            texts_so_far[i] = texts_so_far[i] + " " + tokenizer.decode(out[0], skip_special_tokens=True)
+        generated_list = new_generated_list
+        cache_list = new_cache_list
+        best_idx = _pick_best_agent_by_agreement(texts_so_far)
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    return texts_so_far, total_tokens

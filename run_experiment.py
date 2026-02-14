@@ -45,7 +45,12 @@ from src.eval_gsm8k import (
     load_gsm8k,
 )
 from src.baselines import single_agent_cot, two_agent_text_debate
-from src.kv_cache_rag import two_agent_kv_rag_round, two_agent_kv_full_stitch_round
+from src.kv_cache_rag import (
+    two_agent_kv_rag_round,
+    two_agent_kv_full_stitch_round,
+    five_agent_three_round_full_stitch,
+    _pick_best_agent_by_agreement,
+)
 
 
 def load_model_and_tokenizer(model_name: str, device: torch.device, load_8bit: bool = False):
@@ -109,7 +114,7 @@ def main():
         type=str,
         nargs="+",
         default=["single", "text_debate", "kv_rag"],
-        help="Which methods to run: single, text_debate, kv_rag, latent_full_stitch",
+        help="Which methods to run: single, text_debate, kv_rag, latent_full_stitch, five_agent_three_round",
     )
     parser.add_argument(
         "--start_idx",
@@ -320,6 +325,48 @@ def main():
         results["latent_full_stitch"] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
         elapsed = time.perf_counter() - t0
         log.info("  [latent_full_stitch] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", acc * 100, total_tokens, elapsed)
+        if args.output:
+            with open(args.output, "w") as f:
+                json.dump(results, f, indent=2)
+            log.info("  Saved to %s", args.output)
+        _flush()
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
+    # Five heterogeneous agents, 3 rounds, full-stitch from best agent each round
+    if "five_agent_three_round" in args.methods:
+        log.info("")
+        log.info("--- Five-agent 3-round full-stitch (best agent each round) ---")
+        t0 = time.perf_counter()
+        preds = []
+        total_tokens = 0
+        for i, ex in enumerate(dataset):
+            log.info("  [five_agent_three_round] example %d/%d ...", i + 1, len(dataset))
+            _flush()
+            question = ex["question"]
+            gold = ex["answer"].split("####")[-1].strip()
+            texts, n_tok = five_agent_three_round_full_stitch(
+                model,
+                tokenizer,
+                question,
+                device,
+                num_agents=5,
+                num_rounds=3,
+                max_new_tokens_round1=args.max_new_tokens,
+                max_new_tokens_refine=min(128, args.max_new_tokens),
+            )
+            total_tokens += n_tok
+            best_idx = _pick_best_agent_by_agreement(texts)
+            pred_text = texts[best_idx]
+            preds.append((pred_text, gold))
+            if (i + 1) % 10 == 0:
+                elapsed = time.perf_counter() - t0
+                log.info("  [five_agent_three_round] %d/%d done in %.0fs (%.1fs/ex)", i + 1, len(dataset), elapsed, elapsed / (i + 1))
+                _flush()
+        acc, n = evaluate_gsm8k(preds)
+        results["five_agent_three_round"] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
+        elapsed = time.perf_counter() - t0
+        log.info("  [five_agent_three_round] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", acc * 100, total_tokens, elapsed)
         if args.output:
             with open(args.output, "w") as f:
                 json.dump(results, f, indent=2)
