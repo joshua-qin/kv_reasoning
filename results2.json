@@ -1,0 +1,12 @@
+{
+  "kv_rag": {
+    "accuracy": 0.72,
+    "total_tokens": 34545,
+    "n": 50
+  },
+  "latent_full_stitch": {
+    "accuracy": 0.54,
+    "total_tokens": 41410,
+    "n": 50
+  }
+}
