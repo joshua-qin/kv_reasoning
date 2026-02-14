@@ -10,8 +10,13 @@
     "n": 50
   },
   "kv_rag": {
-    "accuracy": 0.04,
-    "total_tokens": 43901,
+    "accuracy": 0.74,
+    "total_tokens": 33834,
+    "n": 50
+  },
+  "latent_full_stitch": {
+    "accuracy": 0.74,
+    "total_tokens": 33711,
     "n": 50
   }
 }

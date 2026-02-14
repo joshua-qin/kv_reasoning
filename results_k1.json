@@ -1,0 +1,7 @@
+{
+  "kv_rag": {
+    "accuracy": 0.74,
+    "total_tokens": 33691,
+    "n": 50
+  }
+}

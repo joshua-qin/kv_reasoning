@@ -1,6 +1,7 @@
 """
 KV cache extraction, retrieval by key similarity, and stitching for second-round reasoning.
 Training-free: two agents (two runs of same model) share selected parts of each other's KV cache.
+Positional embeddings (RoPE) are re-encoded after stitching so keys use global positions.
 """
 
 from __future__ import annotations
@@ -8,6 +9,8 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import List, Tuple, Optional, Any
+
+from .rope_utils import reencode_past_kvs_for_stitching
 
 # past_key_values: tuple of (key, value) per layer
 # key, value: (batch, num_heads, seq_len, head_dim)
@@ -227,6 +230,7 @@ def stitch_caches(
     """
     Prepend retrieved KV (from other agent) in front of own KV.
     So the model will "see" [retrieved; own] in that order.
+    Does not re-encode positions; use stitch_and_reencode_caches for correct RoPE.
     """
     stitched = []
     for (rk, rv), (ok, ov) in zip(retrieved, own):
@@ -234,6 +238,35 @@ def stitch_caches(
         new_v = torch.cat([rv, ov], dim=2)
         stitched.append((new_k, new_v))
     return tuple(stitched)
+
+
+def stitch_and_reencode_caches(
+    first: PastKVs,
+    second: PastKVs,
+    first_original_positions: torch.Tensor,
+    config: Any,
+    device: torch.device,
+) -> PastKVs:
+    """
+    Stitch [first; second] and re-encode RoPE so every position uses its global
+    index (0, 1, ..., len(first)+len(second)-1) instead of its original position.
+    first_original_positions: (len(first),) — position each first-block token had in its source run.
+    Second block is assumed to have had positions 0, 1, ..., len(second)-1.
+    """
+    stitched = stitch_caches(first, second)
+    seq_len = stitched[0][0].shape[2]
+    len_second = second[0][0].shape[2]
+    len_first = seq_len - len_second
+    if first_original_positions.device != device:
+        first_original_positions = first_original_positions.to(device)
+    original_position_ids = torch.cat(
+        [
+            first_original_positions,
+            torch.arange(len_second, device=device, dtype=first_original_positions.dtype),
+        ],
+        dim=0,
+    )
+    return reencode_past_kvs_for_stitching(stitched, original_position_ids, config, device)
 
 
 def _cache_tuple_to_dynamic(cache_tuple: PastKVs, config: Any) -> Any:
@@ -391,9 +424,14 @@ def two_agent_kv_rag_round(
     retrieved_from_b = slice_cache_at_positions(cache_b, pos_from_b)
     retrieved_from_a = slice_cache_at_positions(cache_a, pos_from_a)
 
-    # Stitch: A gets [retrieved_from_b; cache_a], B gets [retrieved_from_a; cache_b]
-    stitch_a = stitch_caches(retrieved_from_b, cache_a)
-    stitch_b = stitch_caches(retrieved_from_a, cache_b)
+    # Stitch and re-encode RoPE so positions match global [retrieved; own] indices
+    config = getattr(model, "config", model.model.config)
+    stitch_a = stitch_and_reencode_caches(
+        retrieved_from_b, cache_a, pos_from_b, config, device
+    )
+    stitch_b = stitch_and_reencode_caches(
+        retrieved_from_a, cache_b, pos_from_a, config, device
+    )
     len_stitch_a = retrieved_from_b[0][0].shape[2] + cache_a[0][0].shape[2]
     len_stitch_b = retrieved_from_a[0][0].shape[2] + cache_b[0][0].shape[2]
     # Free large tensors before round 2 to reduce GPU memory
@@ -470,11 +508,23 @@ def two_agent_kv_full_stitch_round(
 
     total_tokens = generated_a.shape[1] + generated_b.shape[1]
 
-    # Full-stitch: A sees full B then full A; B sees full A then full B
-    stitch_a = stitch_caches(cache_b, cache_a)
-    stitch_b = stitch_caches(cache_a, cache_b)
-    len_stitch_a = cache_b[0][0].shape[2] + cache_a[0][0].shape[2]
-    len_stitch_b = cache_a[0][0].shape[2] + cache_b[0][0].shape[2]
+    # Full-stitch: A sees full B then full A; B sees full A then full B. Re-encode RoPE for global positions.
+    config = getattr(model, "config", model.model.config)
+    len_b = cache_b[0][0].shape[2]
+    len_a = cache_a[0][0].shape[2]
+    device = next(model.parameters()).device
+    stitch_a = stitch_and_reencode_caches(
+        cache_b, cache_a,
+        torch.arange(len_b, device=device, dtype=torch.long),
+        config, device,
+    )
+    stitch_b = stitch_and_reencode_caches(
+        cache_a, cache_b,
+        torch.arange(len_a, device=device, dtype=torch.long),
+        config, device,
+    )
+    len_stitch_a = len_b + len_a
+    len_stitch_b = len_a + len_b
 
     # Free originals to save memory
     del cache_a, cache_b

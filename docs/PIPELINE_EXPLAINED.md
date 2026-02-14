@@ -63,9 +63,9 @@ The model then:
 
 So **stitching = one long KV sequence**. The model doesn’t know “this part is from A, this part is from B”; it just sees one contiguous past and attends over it when generating the continuation.
 
-### Position embedding caveat
+### Position re-encoding (RoPE) after stitching
 
-The K and V vectors in the cache were computed with **position encodings at their original positions** (e.g. RoPE(0), RoPE(1), … in each agent’s own run). When we stitch:
+The K vectors in the cache were computed with **RoPE at their original positions** (e.g. RoPE(0), RoPE(1), … in each agent’s own run). When we stitch:
 
 - We put “retrieved” at positions **0 … 31** in the new sequence, but those K,V may have been computed at positions 180 … 211 in the other agent’s run (so they encode RoPE(180), …).
 - We put “own” at positions **32 … 431**, but those K,V were computed at positions 0 … 399 in the current agent’s run (so they encode RoPE(0), …).
