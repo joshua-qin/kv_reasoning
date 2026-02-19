@@ -1,0 +1,42 @@
+{
+  "single_agent": {
+    "accuracy": 0.78,
+    "total_tokens": 14642,
+    "n": 50
+  },
+  "text_debate": {
+    "accuracy": 0.7,
+    "total_tokens": 47105,
+    "n": 50
+  },
+  "kv_rag_similarity": {
+    "accuracy": 0.78,
+    "total_tokens": 42994,
+    "n": 50
+  },
+  "kv_rag_disagreement": {
+    "accuracy": 0.72,
+    "total_tokens": 43004,
+    "n": 50
+  },
+  "kv_rag_similarity_verifier": {
+    "accuracy": 0.76,
+    "total_tokens": 58222,
+    "n": 50
+  },
+  "kv_rag_disagreement_verifier": {
+    "accuracy": 0.72,
+    "total_tokens": 61232,
+    "n": 50
+  },
+  "latent_full_stitch": {
+    "accuracy": 0.78,
+    "total_tokens": 33711,
+    "n": 50
+  },
+  "latent_full_stitch_verifier": {
+    "accuracy": 0.78,
+    "total_tokens": 40471,
+    "n": 50
+  }
+}

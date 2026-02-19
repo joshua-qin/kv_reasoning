@@ -383,9 +383,10 @@ def main():
                 log.info("  [kv_rag] %d/%d done in %.0fs (%.1fs/ex)", i + 1, len(dataset), elapsed, elapsed / (i + 1))
                 _flush()
         acc, n = evaluate_gsm8k(preds)
-        results["kv_rag"] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
+        kv_key = "kv_rag_" + args.retrieval_score + ("_verifier" if args.use_verifier else "")
+        results[kv_key] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
         elapsed = time.perf_counter() - t0
-        log.info("  [kv_rag] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", acc * 100, total_tokens, elapsed)
+        log.info("  [%s] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", kv_key, acc * 100, total_tokens, elapsed)
         if args.output:
             with open(args.output, "w") as f:
                 json.dump(results, f, indent=2)
@@ -431,9 +432,10 @@ def main():
                 log.info("  [latent_full_stitch] %d/%d done in %.0fs (%.1fs/ex)", i + 1, len(dataset), elapsed, elapsed / (i + 1))
                 _flush()
         acc, n = evaluate_gsm8k(preds)
-        results["latent_full_stitch"] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
+        lfs_key = "latent_full_stitch" + ("_verifier" if args.use_verifier else "")
+        results[lfs_key] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
         elapsed = time.perf_counter() - t0
-        log.info("  [latent_full_stitch] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", acc * 100, total_tokens, elapsed)
+        log.info("  [%s] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", lfs_key, acc * 100, total_tokens, elapsed)
         if args.output:
             with open(args.output, "w") as f:
                 json.dump(results, f, indent=2)
