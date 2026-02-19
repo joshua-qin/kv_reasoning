@@ -238,6 +238,90 @@ def retrieve_best_contiguous_chunk(
     return torch.arange(start, start + length, device=scores.device, dtype=torch.long)
 
 
+def _compute_disagreement_scores(
+    cache_a: PastKVs,
+    cache_b: PastKVs,
+    min_position_a: int,
+    min_position_b: int,
+    layer: int = -1,
+    reduce_heads: str = "mean",
+) -> torch.Tensor:
+    """
+    Compute disagreement between A and B at aligned positions in their generated regions.
+    Returns (L,) scores where higher = more disagreement.
+    L = min(len_a - min_a, len_b - min_b) over the overlapping region.
+    """
+    kv_a = _to_past_kvs_tuple(cache_a)
+    kv_b = _to_past_kvs_tuple(cache_b)
+    k_a, _ = kv_a[layer]
+    k_b, _ = kv_b[layer]
+    seq_a, seq_b = k_a.shape[2], k_b.shape[2]
+    len_a = seq_a - min_position_a
+    len_b = seq_b - min_position_b
+    L = min(max(0, len_a), max(0, len_b))
+    if L <= 0:
+        return torch.zeros(1, device=k_a.device)
+    # k_a, k_b: (1, num_heads, seq_len, head_dim)
+    ka = k_a[:, :, min_position_a : min_position_a + L, :]  # (1, H, L, D)
+    kb = k_b[:, :, min_position_b : min_position_b + L, :]  # (1, H, L, D)
+    ka = F.normalize(ka, p=2, dim=-1)
+    kb = F.normalize(kb, p=2, dim=-1)
+    if reduce_heads == "mean":
+        cos_sim = (ka * kb).sum(dim=-1).mean(dim=1)  # (1, L)
+    else:
+        cos_sim = (ka * kb).sum(dim=(1, -1))  # (1, L)
+    cos_sim = cos_sim.squeeze(0)
+    disagreement = 1.0 - cos_sim
+    return disagreement
+
+
+def retrieve_most_disagreed_chunk(
+    cache_a: PastKVs,
+    cache_b: PastKVs,
+    chunk_len: int,
+    min_position_a: int,
+    min_position_b: int,
+    layer: int = -1,
+    reduce_heads: str = "mean",
+) -> Tuple[torch.LongTensor, torch.LongTensor]:
+    """
+    Find the aligned position where A and B disagree most, then return contiguous chunks
+    from each cache centered on that position.
+    Returns (pos_from_b, pos_from_a): positions in B to give to A, positions in A to give to B.
+    """
+    kv_a = _to_past_kvs_tuple(cache_a)
+    kv_b = _to_past_kvs_tuple(cache_b)
+    seq_a = kv_a[layer][0].shape[2]
+    seq_b = kv_b[layer][0].shape[2]
+    disagreement = _compute_disagreement_scores(
+        cache_a, cache_b, min_position_a, min_position_b, layer, reduce_heads
+    )
+    L = disagreement.shape[0]
+    if L <= 0:
+        dev = kv_a[layer][0].device
+        return torch.arange(0, device=dev, dtype=torch.long), torch.arange(0, device=dev, dtype=torch.long)
+    best_i = disagreement.argmax().item()
+    # B's position for max disagreement: min_position_b + best_i
+    # A's position for max disagreement: min_position_a + best_i
+    center_b = min_position_b + best_i
+    center_a = min_position_a + best_i
+    dev = disagreement.device
+    length_b = min(chunk_len, seq_b - min_position_b)
+    length_a = min(chunk_len, seq_a - min_position_a)
+    if length_b <= 0 or length_a <= 0:
+        return (
+            torch.arange(min_position_b, min_position_b + 1, device=dev, dtype=torch.long),
+            torch.arange(min_position_a, min_position_a + 1, device=dev, dtype=torch.long),
+        )
+    start_b = max(min_position_b, min(center_b - length_b // 2, seq_b - length_b))
+    start_b = min(start_b, seq_b - length_b)
+    start_a = max(min_position_a, min(center_a - length_a // 2, seq_a - length_a))
+    start_a = min(start_a, seq_a - length_a)
+    pos_from_b = torch.arange(start_b, start_b + length_b, device=dev, dtype=torch.long)
+    pos_from_a = torch.arange(start_a, start_a + length_a, device=dev, dtype=torch.long)
+    return pos_from_b, pos_from_a
+
+
 def slice_cache_at_positions(
     past_key_values: Any,
     positions: torch.LongTensor,
@@ -402,6 +486,7 @@ def two_agent_kv_rag_round(
     query_last_n: int = 8,
     use_cosine: bool = True,
     retrieve_from_generated_only: bool = True,
+    retrieval_score: str = "similarity",  # "similarity" | "disagreement"
     prompt_agent_a: str = (
         "You are agent A (precise calculator). Solve with equations, "
         "check each arithmetic step, and end with one numeric answer."
@@ -473,7 +558,15 @@ def two_agent_kv_rag_round(
     min_from_b = prompt_len_b if retrieve_from_generated_only else 0
     min_from_a = prompt_len_a if retrieve_from_generated_only else 0
 
-    if use_contiguous_chunk:
+    if retrieval_score == "disagreement":
+        pos_from_b, pos_from_a = retrieve_most_disagreed_chunk(
+            cache_a,
+            cache_b,
+            chunk_len=top_k,
+            min_position_a=min_from_a,
+            min_position_b=min_from_b,
+        )
+    elif use_contiguous_chunk:
         pos_from_b = retrieve_best_contiguous_chunk(
             qa_key, cache_b, chunk_len=top_k, use_cosine=use_cosine, min_position=min_from_b
         )

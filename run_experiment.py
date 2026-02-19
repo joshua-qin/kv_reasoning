@@ -198,6 +198,13 @@ def main():
         help="Use sparse top-k positions instead of one contiguous chunk (default: contiguous for first experiment).",
     )
     parser.add_argument(
+        "--retrieval_score",
+        type=str,
+        choices=["similarity", "disagreement"],
+        default="similarity",
+        help="Retrieval scoring: similarity (query-key cosine) or disagreement (key-key mismatch at aligned positions).",
+    )
+    parser.add_argument(
         "--use_verifier",
         action="store_true",
         help="Use a verifier pass to resolve disagreements between candidate answers.",
@@ -220,7 +227,10 @@ def main():
 
     log.info("=" * 60)
     log.info("KV Cache RAG experiment")
-    log.info("  model=%s  device=%s  max_eval=%s  methods=%s", args.model, args.device, args.max_eval, args.methods)
+    log.info(
+        "  model=%s  device=%s  max_eval=%s  methods=%s  retrieval_score=%s",
+        args.model, args.device, args.max_eval, args.methods, args.retrieval_score,
+    )
     log.info("  output=%s", args.output or "(none)")
     log.info("=" * 60)
     _flush()
@@ -354,6 +364,7 @@ def main():
                 top_k=args.top_k,
                 use_contiguous_chunk=not args.kv_rag_sparse,
                 agent_b_do_sample=False,  # greedy for both agents
+                retrieval_score=args.retrieval_score,
             )
             total_tokens += n_tok
             pred_text, verifier_tok = pick_best_prediction(
