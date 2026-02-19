@@ -17,6 +17,11 @@ from .eval_gsm8k import extract_answer_gsm8k, normalize_answer
 # key, value: (batch, num_heads, seq_len, head_dim)
 PastKVs = Tuple[Tuple[torch.Tensor, torch.Tensor], ...]
 
+# Fixed unrelated question for ablation: real model KV cache but semantically irrelevant to math
+UNRELATED_QUESTION = (
+    "What is the capital of France? Reply with only the city name."
+)
+
 
 def _sample_next_token(
     logits: torch.Tensor,
@@ -354,21 +359,86 @@ def stitch_caches(
     return tuple(stitched)
 
 
+def slice_or_pad_cache(
+    cache: PastKVs,
+    target_len: int,
+    device: torch.device,
+) -> PastKVs:
+    """
+    Return a cache with exactly target_len positions along seq_len.
+    If cache is longer, slice to first target_len; if shorter, pad by repeating the last position.
+    """
+    out = []
+    for (k, v) in cache:
+        k, v = k.to(device), v.to(device)
+        L = k.shape[2]
+        if L >= target_len:
+            k_out = k[:, :, :target_len, :].clone()
+            v_out = v[:, :, :target_len, :].clone()
+        else:
+            # Pad: repeat last position (L-1) to fill [L, ..., target_len-1]
+            n_pad = target_len - L
+            k_last = k[:, :, -1:, :].expand(1, 1, n_pad, k.shape[3])
+            v_last = v[:, :, -1:, :].expand(1, 1, n_pad, v.shape[3])
+            k_out = torch.cat([k, k_last], dim=2)
+            v_out = torch.cat([v, v_last], dim=2)
+        out.append((k_out, v_out))
+    return tuple(out)
+
+
+def get_unrelated_question_cache(
+    model: Any,
+    tokenizer: Any,
+    device: torch.device,
+    system_prompt: str = "You are a precise reasoner. Solve the following problem.",
+    prompt_agent: str = "You are agent B. Think step by step and give your final answer.",
+    max_new_tokens: int = 256,
+) -> PastKVs:
+    """
+    Run the model on a fixed unrelated question and return the full KV cache.
+    Used for ablation: stitch this cache instead of the other agent's, so the
+    prepended context is real model output but semantically irrelevant.
+    """
+    prompt = f"{system_prompt}\n\n{prompt_agent}\n\nProblem: {UNRELATED_QUESTION}\n\nReasoning:"
+    ids = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).input_ids.to(device)
+    _, cache_raw = get_full_kv_cache(
+        model, tokenizer, ids, device, max_new_tokens=max_new_tokens
+    )
+    return _to_past_kvs_tuple(cache_raw)
+
+
 def random_kv_cache_like(
     reference: PastKVs,
     device: torch.device,
     generator: Optional[torch.Generator] = None,
-    std: float = 0.02,
+    match_scale: bool = True,
+    fixed_std: Optional[float] = None,
 ) -> PastKVs:
     """
     Create a random KV cache with the same shape as reference (for ablation:
     stitch random KV instead of real other-agent cache to isolate effect of
     the stitching procedure vs. actual latent content).
+
+    If match_scale=True (default): each key/value tensor is randn * std(reference) + mean(reference)
+    so the random cache has the same per-tensor mean and variance as the real cache.
+    If match_scale=False and fixed_std is set, use N(0, fixed_std^2). If fixed_std is None
+    when match_scale=False, use fixed_std=0.02 for backward compatibility.
     """
     out = []
     for (k_ref, v_ref) in reference:
-        k_rand = torch.randn_like(k_ref, device=device, dtype=k_ref.dtype, generator=generator) * std
-        v_rand = torch.randn_like(v_ref, device=device, dtype=v_ref.dtype, generator=generator) * std
+        k_ref = k_ref.to(device)
+        v_ref = v_ref.to(device)
+        if match_scale:
+            k_std = k_ref.std().clamp(min=1e-6).item()
+            k_mean = k_ref.mean().item()
+            v_std = v_ref.std().clamp(min=1e-6).item()
+            v_mean = v_ref.mean().item()
+            k_rand = torch.randn_like(k_ref, device=device, dtype=k_ref.dtype, generator=generator) * k_std + k_mean
+            v_rand = torch.randn_like(v_ref, device=device, dtype=v_ref.dtype, generator=generator) * v_std + v_mean
+        else:
+            std = fixed_std if fixed_std is not None else 0.02
+            k_rand = torch.randn_like(k_ref, device=device, dtype=k_ref.dtype, generator=generator) * std
+            v_rand = torch.randn_like(v_ref, device=device, dtype=v_ref.dtype, generator=generator) * std
         out.append((k_rand, v_rand))
     return tuple(out)
 
@@ -675,14 +745,17 @@ def two_agent_kv_full_stitch_round(
     prompt_agent_b: str = "You are agent B. Think step by step and give your final answer.",
     system_prompt: str = "You are a precise reasoner. Solve the following problem.",
     use_random_other_cache: bool = False,
+    unrelated_cache: Optional[PastKVs] = None,
 ) -> Tuple[str, str, int]:
     """
     Simple \"latent collaboration\" baseline:
     - Round 1: Agent A and B each do CoT independently, producing full KV caches.
     - Stitch: A gets [full cache of B; full cache of A], B gets [full cache of A; full cache of B]
       (no retrieval/top-k, we just share everything).
-      If use_random_other_cache=True (ablation): the \"other\" cache is replaced by random KV
-      of the same shape, so we only test the effect of the stitching procedure.
+      Ablations:
+      - unrelated_cache: use the model's KV cache from a fixed unrelated question (sliced/padded
+        to match len_b and len_a), so the prepended context is real but semantically irrelevant.
+      - use_random_other_cache: use random KV (same shape/scale) to test procedure only.
     - Round 2: short continuation from stitched caches with a \"Refining:\" prompt.
 
     Returns (text_a, text_b, total_tokens) where text_* = round1 + round2.
@@ -710,13 +783,20 @@ def two_agent_kv_full_stitch_round(
     total_tokens = generated_a.shape[1] + generated_b.shape[1]
 
     # Full-stitch: A sees full B then full A; B sees full A then full B. Re-encode RoPE for global positions.
-    # Ablation: use random KV for the "other" cache to isolate effect of stitching procedure.
+    # Ablation: unrelated_cache (fixed unrelated question) or use_random_other_cache (random KV).
     config = getattr(model, "config", model.model.config)
     len_b = cache_b[0][0].shape[2]
     len_a = cache_a[0][0].shape[2]
     device = next(model.parameters()).device
-    first_for_a = random_kv_cache_like(cache_b, device) if use_random_other_cache else cache_b
-    first_for_b = random_kv_cache_like(cache_a, device) if use_random_other_cache else cache_a
+    if unrelated_cache is not None:
+        first_for_a = slice_or_pad_cache(unrelated_cache, len_b, device)
+        first_for_b = slice_or_pad_cache(unrelated_cache, len_a, device)
+    elif use_random_other_cache:
+        first_for_a = random_kv_cache_like(cache_b, device)
+        first_for_b = random_kv_cache_like(cache_a, device)
+    else:
+        first_for_a = cache_b
+        first_for_b = cache_a
     stitch_a = stitch_and_reencode_caches(
         first_for_a, cache_a,
         torch.arange(len_b, device=device, dtype=torch.long),

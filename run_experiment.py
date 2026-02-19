@@ -48,6 +48,7 @@ from src.eval_gsm8k import (
 from src.baselines import single_agent_cot, two_agent_text_debate
 from src.kv_cache_rag import (
     get_full_kv_cache,
+    get_unrelated_question_cache,
     two_agent_kv_rag_round,
     two_agent_kv_full_stitch_round,
     five_agent_three_round_full_stitch,
@@ -444,10 +445,20 @@ def main():
         if device.type == "cuda":
             torch.cuda.empty_cache()
 
-    # Ablation: full-stitch but with random KV for the "other" cache (same procedure, no real latent content)
+    # Ablation: full-stitch but with KV cache from a fixed unrelated question (real but irrelevant content)
     if "latent_full_stitch_random_kv" in args.methods:
         log.info("")
-        log.info("--- Two-agent full-stitch with RANDOM other KV (ablation) ---")
+        log.info("--- Two-agent full-stitch with UNRELATED-QUESTION cache (ablation) ---")
+        log.info("  Precomputing unrelated-question KV cache...")
+        _flush()
+        unrelated_cache = get_unrelated_question_cache(
+            model,
+            tokenizer,
+            device,
+            max_new_tokens=args.max_new_tokens,
+        )
+        log.info("  Done. Running examples.")
+        _flush()
         t0 = time.perf_counter()
         preds = []
         total_tokens = 0
@@ -463,7 +474,7 @@ def main():
                 device,
                 max_new_tokens_round1=args.max_new_tokens,
                 max_new_tokens_round2=min(128, args.max_new_tokens),
-                use_random_other_cache=True,
+                unrelated_cache=unrelated_cache,
             )
             total_tokens += n_tok
             pred_text, verifier_tok = pick_best_prediction(
