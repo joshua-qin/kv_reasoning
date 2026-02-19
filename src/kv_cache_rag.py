@@ -18,6 +18,31 @@ from .eval_gsm8k import extract_answer_gsm8k, normalize_answer
 PastKVs = Tuple[Tuple[torch.Tensor, torch.Tensor], ...]
 
 
+def _sample_next_token(
+    logits: torch.Tensor,
+    do_sample: bool,
+    temperature: float = 1.0,
+    top_p: float = 1.0,
+) -> torch.Tensor:
+    """Sample or greedy-pick next token from logits."""
+    if not do_sample:
+        return logits.argmax(dim=-1, keepdim=True)
+
+    temperature = max(float(temperature), 1e-5)
+    probs = F.softmax(logits / temperature, dim=-1)
+    top_p = float(top_p)
+    if top_p < 1.0:
+        sorted_probs, sorted_indices = torch.sort(probs, descending=True, dim=-1)
+        cum = torch.cumsum(sorted_probs, dim=-1)
+        keep = cum <= top_p
+        keep[..., 0] = True  # always keep at least one token
+        masked = torch.where(keep, sorted_probs, torch.zeros_like(sorted_probs))
+        masked = masked / masked.sum(dim=-1, keepdim=True).clamp_min(1e-8)
+        sampled_sorted = torch.multinomial(masked, num_samples=1)
+        return sorted_indices.gather(-1, sampled_sorted)
+    return torch.multinomial(probs, num_samples=1)
+
+
 def _to_past_kvs_tuple(cache: Any) -> PastKVs:
     """Convert DynamicCache or tuple to (key, value) tuple per layer."""
     if cache is None:
@@ -40,6 +65,8 @@ def get_full_kv_cache(
     device: torch.device,
     max_new_tokens: int = 512,
     do_sample: bool = False,
+    temperature: float = 1.0,
+    top_p: float = 1.0,
 ) -> Tuple[torch.LongTensor, PastKVs]:
     """
     Run the model autoregressively and return the generated token ids and the full KV cache
@@ -76,10 +103,12 @@ def get_full_kv_cache(
             )
             past_key_values = outputs.past_key_values
             next_token_logits = outputs.logits[:, -1, :]
-            if do_sample:
-                next_token = torch.multinomial(F.softmax(next_token_logits, dim=-1), num_samples=1)
-            else:
-                next_token = next_token_logits.argmax(dim=-1, keepdim=True)
+            next_token = _sample_next_token(
+                next_token_logits,
+                do_sample=do_sample,
+                temperature=temperature,
+                top_p=top_p,
+            )
             generated = torch.cat([generated, next_token], dim=1)
             attention_mask = torch.cat(
                 [
@@ -284,6 +313,8 @@ def continue_with_cache(
     position_offset: int,
     max_new_tokens: int = 256,
     do_sample: bool = False,
+    temperature: float = 1.0,
+    top_p: float = 1.0,
     return_cache: bool = False,
 ):
     """
@@ -329,10 +360,12 @@ def continue_with_cache(
     with torch.no_grad():
         for _ in range(max_new_tokens - 1):
             next_token_logits = outputs.logits[:, -1, :]
-            if do_sample:
-                next_token = torch.multinomial(F.softmax(next_token_logits, dim=-1), num_samples=1)
-            else:
-                next_token = next_token_logits.argmax(dim=-1, keepdim=True)
+            next_token = _sample_next_token(
+                next_token_logits,
+                do_sample=do_sample,
+                temperature=temperature,
+                top_p=top_p,
+            )
             generated = torch.cat([generated, next_token], dim=1)
             attention_mask = torch.ones(
                 (batch_size, position_offset + generated.shape[1]), dtype=torch.long, device=device
@@ -369,9 +402,22 @@ def two_agent_kv_rag_round(
     query_last_n: int = 8,
     use_cosine: bool = True,
     retrieve_from_generated_only: bool = True,
-    prompt_agent_a: str = "You are agent A. Think step by step and give your final answer.",
-    prompt_agent_b: str = "You are agent B. Think step by step and give your final answer.",
+    prompt_agent_a: str = (
+        "You are agent A (precise calculator). Solve with equations, "
+        "check each arithmetic step, and end with one numeric answer."
+    ),
+    prompt_agent_b: str = (
+        "You are agent B (independent strategist). Solve with a different approach, "
+        "estimate intermediate values for sanity checks, and end with one numeric answer."
+    ),
     system_prompt: str = "You are a precise reasoner. Solve the following problem.",
+    agent_a_do_sample: bool = False,
+    agent_b_do_sample: bool = True,
+    agent_a_temperature: float = 0.2,
+    agent_b_temperature: float = 0.8,
+    agent_a_top_p: float = 0.9,
+    agent_b_top_p: float = 0.95,
+    round2_do_sample: bool = False,
 ) -> Tuple[str, str, int]:
     """
     One round of KV-cache RAG: A and B each do CoT; then each gets top-k from the other's cache,
@@ -390,10 +436,24 @@ def two_agent_kv_rag_round(
     prompt_len_b = ids_b.shape[1]
 
     generated_a, cache_a_raw = get_full_kv_cache(
-        model, tokenizer, ids_a, device, max_new_tokens=max_new_tokens_round1
+        model,
+        tokenizer,
+        ids_a,
+        device,
+        max_new_tokens=max_new_tokens_round1,
+        do_sample=agent_a_do_sample,
+        temperature=agent_a_temperature,
+        top_p=agent_a_top_p,
     )
     generated_b, cache_b_raw = get_full_kv_cache(
-        model, tokenizer, ids_b, device, max_new_tokens=max_new_tokens_round1
+        model,
+        tokenizer,
+        ids_b,
+        device,
+        max_new_tokens=max_new_tokens_round1,
+        do_sample=agent_b_do_sample,
+        temperature=agent_b_temperature,
+        top_p=agent_b_top_p,
     )
     cache_a = _to_past_kvs_tuple(cache_a_raw)
     cache_b = _to_past_kvs_tuple(cache_b_raw)
@@ -446,19 +506,39 @@ def two_agent_kv_rag_round(
         torch.cuda.empty_cache()
 
     # Round 2: short continuation so model "refines" after seeing other's latent
-    cont_prompt = " Refining: "
-    cont_ids = tokenizer(cont_prompt, return_tensors="pt").input_ids.to(device)
-    if cont_ids.shape[1] == 0:
-        cont_ids = tokenizer("Refining:", return_tensors="pt").input_ids.to(device)
+    cont_prompt_a = " Refining (double-check calculations and signs): "
+    cont_prompt_b = " Refining (use a different path and cross-check): "
+    cont_ids_a = tokenizer(cont_prompt_a, return_tensors="pt").input_ids.to(device)
+    cont_ids_b = tokenizer(cont_prompt_b, return_tensors="pt").input_ids.to(device)
+    if cont_ids_a.shape[1] == 0:
+        cont_ids_a = tokenizer("Refining:", return_tensors="pt").input_ids.to(device)
+    if cont_ids_b.shape[1] == 0:
+        cont_ids_b = tokenizer("Refining:", return_tensors="pt").input_ids.to(device)
 
     out_a = continue_with_cache(
-        model, tokenizer, cont_ids, stitch_a, position_offset=len_stitch_a, max_new_tokens=max_new_tokens_round2
+        model,
+        tokenizer,
+        cont_ids_a,
+        stitch_a,
+        position_offset=len_stitch_a,
+        max_new_tokens=max_new_tokens_round2,
+        do_sample=round2_do_sample,
+        temperature=agent_a_temperature,
+        top_p=agent_a_top_p,
     )
     del stitch_a
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     out_b = continue_with_cache(
-        model, tokenizer, cont_ids, stitch_b, position_offset=len_stitch_b, max_new_tokens=max_new_tokens_round2
+        model,
+        tokenizer,
+        cont_ids_b,
+        stitch_b,
+        position_offset=len_stitch_b,
+        max_new_tokens=max_new_tokens_round2,
+        do_sample=round2_do_sample,
+        temperature=agent_b_temperature,
+        top_p=agent_b_top_p,
     )
     total_tokens += out_a.shape[1] + out_b.shape[1]
 

@@ -43,14 +43,73 @@ from src.eval_gsm8k import (
     extract_answer_gsm8k,
     evaluate_gsm8k,
     load_gsm8k,
+    normalize_answer,
 )
 from src.baselines import single_agent_cot, two_agent_text_debate
 from src.kv_cache_rag import (
+    get_full_kv_cache,
     two_agent_kv_rag_round,
     two_agent_kv_full_stitch_round,
     five_agent_three_round_full_stitch,
     _pick_best_agent_by_agreement,
 )
+
+
+def pick_best_prediction(
+    question: str,
+    candidate_texts,
+    model,
+    tokenizer,
+    device: torch.device,
+    use_verifier: bool,
+    verifier_max_new_tokens: int,
+):
+    """Disagreement-aware final answer selection with optional verifier."""
+    parsed = []
+    for i, text in enumerate(candidate_texts):
+        ans = normalize_answer(extract_answer_gsm8k(text))
+        parsed.append((i, text, ans))
+
+    present = [(i, text, ans) for (i, text, ans) in parsed if ans]
+    if not present:
+        return candidate_texts[0], 0
+
+    unique_answers = {ans for (_, _, ans) in present}
+    if len(unique_answers) == 1:
+        return present[0][1], 0
+
+    if len(present) == 1:
+        return present[0][1], 0
+
+    if use_verifier and len(candidate_texts) >= 2:
+        verifier_prompt = (
+            "You are a strict math verifier. Two candidates solved the same problem. "
+            "Choose the correct final numeric answer. "
+            "Output exactly one line in this format: #### <number>\\n\\n"
+            f"Problem: {question}\\n\\n"
+            f"Candidate 1:\\n{candidate_texts[0]}\\n\\n"
+            f"Candidate 2:\\n{candidate_texts[1]}\\n\\n"
+            "Final answer (exact format: #### <number>):"
+        )
+        ids = tokenizer(
+            verifier_prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=4096,
+        ).input_ids.to(device)
+        out_ids, _ = get_full_kv_cache(
+            model,
+            tokenizer,
+            ids,
+            device,
+            max_new_tokens=verifier_max_new_tokens,
+        )
+        verifier_text = tokenizer.decode(out_ids[0], skip_special_tokens=True)
+        verifier_ans = normalize_answer(extract_answer_gsm8k(verifier_text))
+        if verifier_ans:
+            return f"#### {verifier_ans}", int(out_ids.shape[1])
+
+    return present[0][1], 0
 
 
 def load_model_and_tokenizer(model_name: str, device: torch.device, load_8bit: bool = False):
@@ -137,6 +196,17 @@ def main():
         "--kv_rag_sparse",
         action="store_true",
         help="Use sparse top-k positions instead of one contiguous chunk (default: contiguous for first experiment).",
+    )
+    parser.add_argument(
+        "--use_verifier",
+        action="store_true",
+        help="Use a verifier pass to resolve disagreements between candidate answers.",
+    )
+    parser.add_argument(
+        "--verifier_max_new_tokens",
+        type=int,
+        default=96,
+        help="Max new tokens for verifier pass when --use_verifier is enabled.",
     )
     args = parser.parse_args()
     device = torch.device(args.device)
@@ -233,7 +303,16 @@ def main():
                 max_new_tokens_per_turn=args.max_new_tokens,
             )
             total_tokens += n_tok
-            pred_text = text_b if text_b else text_a
+            pred_text, verifier_tok = pick_best_prediction(
+                question,
+                [text_a, text_b],
+                model,
+                tokenizer,
+                device,
+                args.use_verifier,
+                args.verifier_max_new_tokens,
+            )
+            total_tokens += verifier_tok
             preds.append((pred_text, gold))
             if (i + 1) % 10 == 0:
                 elapsed = time.perf_counter() - t0
@@ -276,7 +355,16 @@ def main():
                 use_contiguous_chunk=not args.kv_rag_sparse,
             )
             total_tokens += n_tok
-            pred_text = text_b if text_b else text_a
+            pred_text, verifier_tok = pick_best_prediction(
+                question,
+                [text_a, text_b],
+                model,
+                tokenizer,
+                device,
+                args.use_verifier,
+                args.verifier_max_new_tokens,
+            )
+            total_tokens += verifier_tok
             preds.append((pred_text, gold))
             if (i + 1) % 10 == 0:
                 elapsed = time.perf_counter() - t0
@@ -315,7 +403,16 @@ def main():
                 max_new_tokens_round2=min(128, args.max_new_tokens),
             )
             total_tokens += n_tok
-            pred_text = text_b if text_b else text_a
+            pred_text, verifier_tok = pick_best_prediction(
+                question,
+                [text_a, text_b],
+                model,
+                tokenizer,
+                device,
+                args.use_verifier,
+                args.verifier_max_new_tokens,
+            )
+            total_tokens += verifier_tok
             preds.append((pred_text, gold))
             if (i + 1) % 10 == 0:
                 elapsed = time.perf_counter() - t0
