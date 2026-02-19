@@ -5,3 +5,5 @@ datasets>=2.14.0
 accelerate>=0.25.0
 sentencepiece>=0.1.99
 bitsandbytes>=0.41.0
+filelock>=3.10.0
+Pillow>=9.1.0

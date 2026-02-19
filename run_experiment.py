@@ -350,9 +350,10 @@ def main():
                 question,
                 device,
                 max_new_tokens_round1=args.max_new_tokens,
-                max_new_tokens_round2=min(128, args.max_new_tokens),
+                max_new_tokens_round2=min(192, args.max_new_tokens),  # longer refinement
                 top_k=args.top_k,
                 use_contiguous_chunk=not args.kv_rag_sparse,
+                agent_b_do_sample=False,  # greedy for both agents
             )
             total_tokens += n_tok
             pred_text, verifier_tok = pick_best_prediction(

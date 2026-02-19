@@ -412,7 +412,7 @@ def two_agent_kv_rag_round(
     ),
     system_prompt: str = "You are a precise reasoner. Solve the following problem.",
     agent_a_do_sample: bool = False,
-    agent_b_do_sample: bool = True,
+    agent_b_do_sample: bool = False,  # greedy = less variance, matches single-agent behavior
     agent_a_temperature: float = 0.2,
     agent_b_temperature: float = 0.8,
     agent_a_top_p: float = 0.9,

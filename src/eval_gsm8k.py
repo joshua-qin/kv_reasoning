@@ -8,17 +8,18 @@ import re
 from typing import List, Optional, Tuple
 
 
-def extract_answer_gsm8k(text: str) -> Optional[str]:
+def extract_answer_gsm8k(text: str, prefer_last: bool = False) -> Optional[str]:
     """
     GSM8K answers are usually at the end. Common patterns:
     - "#### 1234" or "#### 12.34"
     - "the answer is 42" / "Answer: 42"
     - "$42" at end
+    prefer_last: if False, use first #### (original); if True, use last (standard for single-turn CoT).
     """
     text = text.strip()
-    # #### number
-    m = re.search(r"####\s*([-+]?\d+(?:\.\d+)?)", text)
-    if m:
+    matches = list(re.finditer(r"####\s*([-+]?\d+(?:\.\d+)?)", text))
+    if matches:
+        m = matches[-1] if prefer_last else matches[0]
         return m.group(1).strip()
     # "answer is X" (case insensitive)
     m = re.search(r"(?:answer|final answer)\s*[:\s]+\s*([-+]?\d+(?:\.\d+)?)", text, re.I)
