@@ -1,0 +1,7 @@
+{
+  "latent_full_stitch_random_kv": {
+    "accuracy": 0.76,
+    "total_tokens": 32977,
+    "n": 50
+  }
+}

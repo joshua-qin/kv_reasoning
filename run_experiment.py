@@ -9,7 +9,8 @@ Rough timing on A100 (Qwen2-7B, 384 max_new_tokens):
   - KV RAG:              ~3–6 min per 10 examples (~15–30 min for 50)
   - Latent full-stitch:  ~4–8 min per 10 examples (longer context = more memory/time)
   Run one method at a time with --methods <name> and use the same --output to accumulate results.
-  Methods: single, text_debate, kv_rag, latent_full_stitch, latent_full_stitch_random_kv (ablation).
+  Methods: single, text_debate, kv_rag, latent_full_stitch, latent_full_stitch_random_kv (ablation),
+  latent_full_stitch_random_vectors (random KV), latent_full_stitch_adverse (wrong-math KV).
 """
 
 import argparse
@@ -49,6 +50,7 @@ from src.baselines import single_agent_cot, two_agent_text_debate
 from src.kv_cache_rag import (
     get_full_kv_cache,
     get_unrelated_question_cache,
+    get_adverse_question_cache,
     two_agent_kv_rag_round,
     two_agent_kv_full_stitch_round,
     five_agent_three_round_full_stitch,
@@ -174,7 +176,7 @@ def main():
         type=str,
         nargs="+",
         default=["single", "text_debate", "kv_rag"],
-        help="Which methods to run: single, text_debate, kv_rag, latent_full_stitch, latent_full_stitch_random_kv, five_agent_three_round",
+        help="Which methods to run: single, text_debate, kv_rag, latent_full_stitch, latent_full_stitch_random_kv, latent_full_stitch_random_vectors, latent_full_stitch_adverse, five_agent_three_round",
     )
     parser.add_argument(
         "--start_idx",
@@ -497,6 +499,117 @@ def main():
         results[lfsr_key] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
         elapsed = time.perf_counter() - t0
         log.info("  [%s] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", lfsr_key, acc * 100, total_tokens, elapsed)
+        if args.output:
+            with open(args.output, "w") as f:
+                json.dump(results, f, indent=2)
+            log.info("  Saved to %s", args.output)
+        _flush()
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
+    # Ablation: full-stitch with RANDOM KV vectors (same shape/scale, no semantic content)
+    if "latent_full_stitch_random_vectors" in args.methods:
+        log.info("")
+        log.info("--- Two-agent full-stitch with RANDOM KV vectors (ablation) ---")
+        _flush()
+        t0 = time.perf_counter()
+        preds = []
+        total_tokens = 0
+        for i, ex in enumerate(dataset):
+            log.info("  [latent_full_stitch_random_vectors] example %d/%d ...", i + 1, len(dataset))
+            _flush()
+            question = ex["question"]
+            gold = ex["answer"].split("####")[-1].strip()
+            text_a, text_b, n_tok = two_agent_kv_full_stitch_round(
+                model,
+                tokenizer,
+                question,
+                device,
+                max_new_tokens_round1=args.max_new_tokens,
+                max_new_tokens_round2=min(128, args.max_new_tokens),
+                use_random_other_cache=True,
+            )
+            total_tokens += n_tok
+            pred_text, verifier_tok = pick_best_prediction(
+                question,
+                [text_a, text_b],
+                model,
+                tokenizer,
+                device,
+                args.use_verifier,
+                args.verifier_max_new_tokens,
+            )
+            total_tokens += verifier_tok
+            preds.append((pred_text, gold))
+            if (i + 1) % 10 == 0:
+                elapsed = time.perf_counter() - t0
+                log.info("  [latent_full_stitch_random_vectors] %d/%d done in %.0fs (%.1fs/ex)", i + 1, len(dataset), elapsed, elapsed / (i + 1))
+                _flush()
+        acc, n = evaluate_gsm8k(preds)
+        key = "latent_full_stitch_random_vectors" + ("_verifier" if args.use_verifier else "")
+        results[key] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
+        elapsed = time.perf_counter() - t0
+        log.info("  [%s] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", key, acc * 100, total_tokens, elapsed)
+        if args.output:
+            with open(args.output, "w") as f:
+                json.dump(results, f, indent=2)
+            log.info("  Saved to %s", args.output)
+        _flush()
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
+    # Ablation: full-stitch with ADVERSARIAL cache (wrong math / wrong facts)
+    if "latent_full_stitch_adverse" in args.methods:
+        log.info("")
+        log.info("--- Two-agent full-stitch with ADVERSARIAL cache (wrong-math KV) ---")
+        log.info("  Precomputing adverse (wrong-math) KV cache...")
+        _flush()
+        adverse_cache = get_adverse_question_cache(
+            model,
+            tokenizer,
+            device,
+            max_new_tokens=args.max_new_tokens,
+        )
+        log.info("  Done. Running examples.")
+        _flush()
+        t0 = time.perf_counter()
+        preds = []
+        total_tokens = 0
+        for i, ex in enumerate(dataset):
+            log.info("  [latent_full_stitch_adverse] example %d/%d ...", i + 1, len(dataset))
+            _flush()
+            question = ex["question"]
+            gold = ex["answer"].split("####")[-1].strip()
+            text_a, text_b, n_tok = two_agent_kv_full_stitch_round(
+                model,
+                tokenizer,
+                question,
+                device,
+                max_new_tokens_round1=args.max_new_tokens,
+                max_new_tokens_round2=min(128, args.max_new_tokens),
+                unrelated_cache=adverse_cache,
+            )
+            total_tokens += n_tok
+            pred_text, verifier_tok = pick_best_prediction(
+                question,
+                [text_a, text_b],
+                model,
+                tokenizer,
+                device,
+                args.use_verifier,
+                args.verifier_max_new_tokens,
+            )
+            total_tokens += verifier_tok
+            preds.append((pred_text, gold))
+            if (i + 1) % 10 == 0:
+                elapsed = time.perf_counter() - t0
+                log.info("  [latent_full_stitch_adverse] %d/%d done in %.0fs (%.1fs/ex)", i + 1, len(dataset), elapsed, elapsed / (i + 1))
+                _flush()
+        acc, n = evaluate_gsm8k(preds)
+        key = "latent_full_stitch_adverse" + ("_verifier" if args.use_verifier else "")
+        results[key] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
+        elapsed = time.perf_counter() - t0
+        log.info("  [%s] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", key, acc * 100, total_tokens, elapsed)
         if args.output:
             with open(args.output, "w") as f:
                 json.dump(results, f, indent=2)

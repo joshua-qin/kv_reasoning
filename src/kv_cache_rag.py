@@ -19,7 +19,14 @@ PastKVs = Tuple[Tuple[torch.Tensor, torch.Tensor], ...]
 
 # Fixed unrelated question for ablation: real model KV cache but semantically irrelevant to math
 UNRELATED_QUESTION = (
-    "What is the capital of France? Reply with only the city name."
+    "Write a short poem about the capital of France."
+)
+
+# Adverse prompt for ablation: wrong math and wrong facts so the KV cache encodes misleading info
+ADVERSARIAL_REASONING = (
+    "2 + 2 = 5. 10 times 10 is 99. The sum of 7 and 8 is 100. "
+    "Every equation equals 0. The answer is always 42. "
+    "We conclude the wrong answer: 999999."
 )
 
 
@@ -377,9 +384,10 @@ def slice_or_pad_cache(
             v_out = v[:, :, :target_len, :].clone()
         else:
             # Pad: repeat last position (L-1) to fill [L, ..., target_len-1]
+            # KV shape: (batch, num_heads, seq_len, head_dim)
             n_pad = target_len - L
-            k_last = k[:, :, -1:, :].expand(1, 1, n_pad, k.shape[3])
-            v_last = v[:, :, -1:, :].expand(1, 1, n_pad, v.shape[3])
+            k_last = k[:, :, -1:, :].expand(k.shape[0], k.shape[1], n_pad, k.shape[3])
+            v_last = v[:, :, -1:, :].expand(v.shape[0], v.shape[1], n_pad, v.shape[3])
             k_out = torch.cat([k, k_last], dim=2)
             v_out = torch.cat([v, v_last], dim=2)
         out.append((k_out, v_out))
@@ -400,6 +408,27 @@ def get_unrelated_question_cache(
     prepended context is real model output but semantically irrelevant.
     """
     prompt = f"{system_prompt}\n\n{prompt_agent}\n\nProblem: {UNRELATED_QUESTION}\n\nReasoning:"
+    ids = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).input_ids.to(device)
+    _, cache_raw = get_full_kv_cache(
+        model, tokenizer, ids, device, max_new_tokens=max_new_tokens
+    )
+    return _to_past_kvs_tuple(cache_raw)
+
+
+def get_adverse_question_cache(
+    model: Any,
+    tokenizer: Any,
+    device: torch.device,
+    system_prompt: str = "You are a precise reasoner. Solve the following problem.",
+    prompt_agent: str = "You are agent B. Think step by step and give your final answer.",
+    max_new_tokens: int = 256,
+) -> PastKVs:
+    """
+    Run the model on a fixed prompt that states wrong math/facts and return the full KV cache.
+    Used for ablation: stitch this cache so the prepended context encodes adverse/misleading
+    information (wrong numbers, wrong conclusions).
+    """
+    prompt = f"{system_prompt}\n\n{prompt_agent}\n\nProblem: (ignore)\n\nReasoning: {ADVERSARIAL_REASONING}"
     ids = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).input_ids.to(device)
     _, cache_raw = get_full_kv_cache(
         model, tokenizer, ids, device, max_new_tokens=max_new_tokens
@@ -433,12 +462,12 @@ def random_kv_cache_like(
             k_mean = k_ref.mean().item()
             v_std = v_ref.std().clamp(min=1e-6).item()
             v_mean = v_ref.mean().item()
-            k_rand = torch.randn_like(k_ref, device=device, dtype=k_ref.dtype, generator=generator) * k_std + k_mean
-            v_rand = torch.randn_like(v_ref, device=device, dtype=v_ref.dtype, generator=generator) * v_std + v_mean
+            k_rand = torch.randn_like(k_ref, device=device, dtype=k_ref.dtype) * k_std + k_mean
+            v_rand = torch.randn_like(v_ref, device=device, dtype=v_ref.dtype) * v_std + v_mean
         else:
             std = fixed_std if fixed_std is not None else 0.02
-            k_rand = torch.randn_like(k_ref, device=device, dtype=k_ref.dtype, generator=generator) * std
-            v_rand = torch.randn_like(v_ref, device=device, dtype=v_ref.dtype, generator=generator) * std
+            k_rand = torch.randn_like(k_ref, device=device, dtype=k_ref.dtype) * std
+            v_rand = torch.randn_like(v_ref, device=device, dtype=v_ref.dtype) * std
         out.append((k_rand, v_rand))
     return tuple(out)
 
