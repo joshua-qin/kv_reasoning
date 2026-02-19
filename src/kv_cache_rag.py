@@ -354,6 +354,25 @@ def stitch_caches(
     return tuple(stitched)
 
 
+def random_kv_cache_like(
+    reference: PastKVs,
+    device: torch.device,
+    generator: Optional[torch.Generator] = None,
+    std: float = 0.02,
+) -> PastKVs:
+    """
+    Create a random KV cache with the same shape as reference (for ablation:
+    stitch random KV instead of real other-agent cache to isolate effect of
+    the stitching procedure vs. actual latent content).
+    """
+    out = []
+    for (k_ref, v_ref) in reference:
+        k_rand = torch.randn_like(k_ref, device=device, dtype=k_ref.dtype, generator=generator) * std
+        v_rand = torch.randn_like(v_ref, device=device, dtype=v_ref.dtype, generator=generator) * std
+        out.append((k_rand, v_rand))
+    return tuple(out)
+
+
 def stitch_and_reencode_caches(
     first: PastKVs,
     second: PastKVs,
@@ -655,12 +674,15 @@ def two_agent_kv_full_stitch_round(
     prompt_agent_a: str = "You are agent A. Think step by step and give your final answer.",
     prompt_agent_b: str = "You are agent B. Think step by step and give your final answer.",
     system_prompt: str = "You are a precise reasoner. Solve the following problem.",
+    use_random_other_cache: bool = False,
 ) -> Tuple[str, str, int]:
     """
     Simple \"latent collaboration\" baseline:
     - Round 1: Agent A and B each do CoT independently, producing full KV caches.
     - Stitch: A gets [full cache of B; full cache of A], B gets [full cache of A; full cache of B]
       (no retrieval/top-k, we just share everything).
+      If use_random_other_cache=True (ablation): the \"other\" cache is replaced by random KV
+      of the same shape, so we only test the effect of the stitching procedure.
     - Round 2: short continuation from stitched caches with a \"Refining:\" prompt.
 
     Returns (text_a, text_b, total_tokens) where text_* = round1 + round2.
@@ -688,17 +710,20 @@ def two_agent_kv_full_stitch_round(
     total_tokens = generated_a.shape[1] + generated_b.shape[1]
 
     # Full-stitch: A sees full B then full A; B sees full A then full B. Re-encode RoPE for global positions.
+    # Ablation: use random KV for the "other" cache to isolate effect of stitching procedure.
     config = getattr(model, "config", model.model.config)
     len_b = cache_b[0][0].shape[2]
     len_a = cache_a[0][0].shape[2]
     device = next(model.parameters()).device
+    first_for_a = random_kv_cache_like(cache_b, device) if use_random_other_cache else cache_b
+    first_for_b = random_kv_cache_like(cache_a, device) if use_random_other_cache else cache_a
     stitch_a = stitch_and_reencode_caches(
-        cache_b, cache_a,
+        first_for_a, cache_a,
         torch.arange(len_b, device=device, dtype=torch.long),
         config, device,
     )
     stitch_b = stitch_and_reencode_caches(
-        cache_a, cache_b,
+        first_for_b, cache_b,
         torch.arange(len_a, device=device, dtype=torch.long),
         config, device,
     )
