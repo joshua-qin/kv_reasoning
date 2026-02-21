@@ -22,10 +22,10 @@ def extract_answer_gsm8k(text: str, prefer_last: bool = False) -> Optional[str]:
     if matches:
         m = matches[-1] if prefer_last else matches[0]
         return m.group(1).strip()
-    # \boxed{number} or \boxed{letter} (LatentMAS / common math format)
-    boxed = re.search(r"\\boxed\{([^}]+)\}", text)
-    if boxed:
-        return boxed.group(1).strip()
+    # \boxed{...} (LatentMAS / common math format): prefer the last boxed answer.
+    boxed_matches = list(re.finditer(r"\\boxed\{([^}]+)\}", text))
+    if boxed_matches:
+        return boxed_matches[-1].group(1).strip()
     # "answer is X" (case insensitive)
     m = re.search(r"(?:answer|final answer)\s*[:\s]+\s*([-+]?\d+(?:\.\d+)?)", text, re.I)
     if m:

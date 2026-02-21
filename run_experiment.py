@@ -73,7 +73,7 @@ def pick_best_prediction(
     """Disagreement-aware final answer selection with optional verifier."""
     parsed = []
     for i, text in enumerate(candidate_texts):
-        ans = normalize_answer(extract_answer_gsm8k(text))
+        ans = normalize_answer(extract_answer_gsm8k(text, prefer_last=True))
         parsed.append((i, text, ans))
 
     present = [(i, text, ans) for (i, text, ans) in parsed if ans]
@@ -287,7 +287,7 @@ def main():
                 elapsed = time.perf_counter() - t0
                 log.info("  [single] %d/%d done in %.0fs (%.1fs/ex)", i + 1, len(dataset), elapsed, elapsed / (i + 1))
                 _flush()
-        acc, n = evaluate_gsm8k(preds)
+        acc, n = evaluate_gsm8k(preds, prefer_last=True)
         results["single_agent"] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
         elapsed = time.perf_counter() - t0
         log.info("  [single] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", acc * 100, total_tokens, elapsed)
@@ -334,7 +334,7 @@ def main():
                 elapsed = time.perf_counter() - t0
                 log.info("  [text_debate] %d/%d done in %.0fs (%.1fs/ex)", i + 1, len(dataset), elapsed, elapsed / (i + 1))
                 _flush()
-        acc, n = evaluate_gsm8k(preds)
+        acc, n = evaluate_gsm8k(preds, prefer_last=True)
         results["text_debate"] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
         elapsed = time.perf_counter() - t0
         log.info("  [text_debate] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", acc * 100, total_tokens, elapsed)

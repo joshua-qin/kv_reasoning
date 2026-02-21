@@ -22,7 +22,8 @@ def single_agent_cot(
     prompt = f"{system_prompt}\n\nProblem: {question}\n\nReasoning:"
     ids = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).input_ids.to(device)
     generated, _ = get_full_kv_cache(model, tokenizer, ids, device, max_new_tokens=max_new_tokens)
-    text = tokenizer.decode(generated[0], skip_special_tokens=True)
+    new_ids = generated[0, ids.shape[1]:]
+    text = tokenizer.decode(new_ids, skip_special_tokens=True)
     num_output_tokens = int(generated.shape[1] - ids.shape[1])
     return text, num_output_tokens
 
@@ -44,7 +45,7 @@ def two_agent_text_debate(
     out_a, _ = get_full_kv_cache(
         model, tokenizer, ids_a, device, max_new_tokens=max_new_tokens_per_turn
     )
-    text_a = tokenizer.decode(out_a[0], skip_special_tokens=True)
+    text_a = tokenizer.decode(out_a[0, ids_a.shape[1]:], skip_special_tokens=True)
 
     # B sees question + A's response as text
     prompt_b = (
@@ -55,7 +56,7 @@ def two_agent_text_debate(
     out_b, _ = get_full_kv_cache(
         model, tokenizer, ids_b, device, max_new_tokens=max_new_tokens_per_turn
     )
-    text_b = tokenizer.decode(out_b[0], skip_special_tokens=True)
+    text_b = tokenizer.decode(out_b[0, ids_b.shape[1]:], skip_special_tokens=True)
     # Paper-aligned: output tokens only (generated, not prompt)
     total_tokens = int((out_a.shape[1] - ids_a.shape[1]) + (out_b.shape[1] - ids_b.shape[1]))
     return text_a, text_b, total_tokens
