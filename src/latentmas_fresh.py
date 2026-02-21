@@ -305,7 +305,7 @@ def _decode_from_past(
     prompt_len = ids.shape[1]
     generated_ids = sequences[0, prompt_len:]
     text = tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
-    return text, int(sequences.shape[1])
+    return text, int(sequences.shape[1] - prompt_len)
 
 
 def _decode_from_scratch(
