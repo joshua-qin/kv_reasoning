@@ -10,7 +10,8 @@ Rough timing on A100 (Qwen2-7B, 384 max_new_tokens):
   - Latent full-stitch:  ~4–8 min per 10 examples (longer context = more memory/time)
   Run one method at a time with --methods <name> and use the same --output to accumulate results.
   Methods: single, text_debate, kv_rag, latent_full_stitch, latent_full_stitch_random_kv (ablation),
-  latent_full_stitch_random_vectors (random KV), latent_full_stitch_adverse (wrong-math KV).
+  latent_full_stitch_random_vectors (random KV), latent_full_stitch_adverse (wrong-math KV),
+  latentmas_solver_critic_solver (solver->critic->solver in LatentMAS style).
 """
 
 import argparse
@@ -46,8 +47,8 @@ from src.eval_gsm8k import (
     load_gsm8k,
     normalize_answer,
 )
-from src.baselines import single_agent_cot, two_agent_text_debate
-from src.kv_cache_rag import (
+from src.legacy_kv_cache_rag.baselines import single_agent_cot, two_agent_text_debate
+from src.legacy_kv_cache_rag.kv_cache_rag import (
     get_full_kv_cache,
     get_unrelated_question_cache,
     get_adverse_question_cache,
@@ -56,6 +57,7 @@ from src.kv_cache_rag import (
     five_agent_three_round_full_stitch,
     _pick_best_agent_by_agreement,
 )
+from src.latentmas_fresh import LatentMASConfig, run_latentmas_solver_critic_solver
 
 
 def pick_best_prediction(
@@ -176,7 +178,7 @@ def main():
         type=str,
         nargs="+",
         default=["single", "text_debate", "kv_rag"],
-        help="Which methods to run: single, text_debate, kv_rag, latent_full_stitch, latent_full_stitch_random_kv, latent_full_stitch_random_vectors, latent_full_stitch_adverse, five_agent_three_round",
+        help="Which methods to run: single, text_debate, kv_rag, latent_full_stitch, latent_full_stitch_random_kv, latent_full_stitch_random_vectors, latent_full_stitch_adverse, five_agent_three_round, latentmas_solver_critic_solver",
     )
     parser.add_argument(
         "--start_idx",
@@ -652,6 +654,56 @@ def main():
         results["five_agent_three_round"] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
         elapsed = time.perf_counter() - t0
         log.info("  [five_agent_three_round] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", acc * 100, total_tokens, elapsed)
+        if args.output:
+            with open(args.output, "w") as f:
+                json.dump(results, f, indent=2)
+            log.info("  Saved to %s", args.output)
+        _flush()
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
+    # LatentMAS-style 2-agent full-stitch: solver -> critic -> solver -> final answer decode
+    if "latentmas_solver_critic_solver" in args.methods:
+        log.info("")
+        log.info("--- LatentMAS 2-agent full-stitch (solver -> critic -> solver) ---")
+        t0 = time.perf_counter()
+        preds = []
+        total_tokens = 0
+        for i, ex in enumerate(dataset):
+            log.info("  [latentmas_solver_critic_solver] example %d/%d ...", i + 1, len(dataset))
+            _flush()
+            question = ex["question"]
+            gold = ex["answer"].split("####")[-1].strip()
+            lm_cfg = LatentMASConfig(
+                latent_steps_solver_1=max(8, min(64, args.max_new_tokens // 8)),
+                latent_steps_critic=max(8, min(48, args.max_new_tokens // 10)),
+                latent_steps_solver_2=max(8, min(48, args.max_new_tokens // 10)),
+                max_new_tokens_decode=min(128, args.max_new_tokens),
+            )
+            pred_text, n_tok = run_latentmas_solver_critic_solver(
+                model,
+                tokenizer,
+                question,
+                device,
+                lm_cfg,
+            )
+            total_tokens += n_tok
+            preds.append((pred_text, gold))
+            if (i + 1) % 10 == 0:
+                elapsed = time.perf_counter() - t0
+                log.info(
+                    "  [latentmas_solver_critic_solver] %d/%d done in %.0fs (%.1fs/ex)",
+                    i + 1,
+                    len(dataset),
+                    elapsed,
+                    elapsed / (i + 1),
+                )
+                _flush()
+        acc, n = evaluate_gsm8k(preds)
+        key = "latentmas_solver_critic_solver"
+        results[key] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
+        elapsed = time.perf_counter() - t0
+        log.info("  [%s] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", key, acc * 100, total_tokens, elapsed)
         if args.output:
             with open(args.output, "w") as f:
                 json.dump(results, f, indent=2)

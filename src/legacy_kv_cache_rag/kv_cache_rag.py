@@ -10,8 +10,8 @@ import torch
 import torch.nn.functional as F
 from typing import List, Tuple, Optional, Any
 
-from .rope_utils import reencode_past_kvs_for_stitching
-from .eval_gsm8k import extract_answer_gsm8k, normalize_answer
+from ..rope_utils import reencode_past_kvs_for_stitching
+from ..eval_gsm8k import extract_answer_gsm8k, normalize_answer
 
 # past_key_values: tuple of (key, value) per layer
 # key, value: (batch, num_heads, seq_len, head_dim)

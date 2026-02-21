@@ -53,8 +53,8 @@ When we stitch "other agent" cache in front of the current agent’s continuatio
 ## Files
 
 - `requirements.txt` — Python deps (torch, transformers, datasets).
-- `src/kv_cache_rag.py` — KV cache extraction, similarity retrieval, stitch, two-agent loop.
-- `src/baselines.py` — Single-agent and text-only two-agent baselines.
+- `src/legacy_kv_cache_rag/kv_cache_rag.py` — Legacy KV cache extraction/retrieval/stitch pipeline (kept for reference).
+- `src/legacy_kv_cache_rag/baselines.py` — Legacy single-agent and text-only two-agent baselines.
 - `src/eval_gsm8k.py` — GSM8K evaluation and answer parsing.
 - `run_experiment.py` — Runs all methods and reports accuracy + token count.
 
