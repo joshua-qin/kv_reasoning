@@ -44,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from src.eval_gsm8k import (
     extract_answer_gsm8k,
     evaluate_gsm8k,
+    is_correct,
     load_gsm8k,
     normalize_answer,
 )
@@ -58,7 +59,17 @@ from src.legacy_kv_cache_rag.kv_cache_rag import (
     _pick_best_agent_by_agreement,
 )
 from src.latentmas_fresh import LatentMASConfig, run_sequential_latent_mas
-from src.sequential_text_mas import run_sequential_text_mas
+from src.sequential_text_mas import run_sequential_text_mas, run_single_agent_paper_aligned
+
+
+def _log_example_prediction(method_label: str, ex_idx: int, pred_text: str, gold: str, last_chars: int = 500) -> None:
+    """Log extracted answer, gold, correct, and tail of model output for one example."""
+    extracted = extract_answer_gsm8k(pred_text, prefer_last=True)
+    correct = is_correct(extracted, gold)
+    log.info("  [%s] ex %d: extracted=%s | gold=%s | correct=%s", method_label, ex_idx, extracted, gold, correct)
+    tail = pred_text[-last_chars:] if len(pred_text) > last_chars else pred_text
+    log.info("  [%s] ex %d output (last %d chars): %s", method_label, ex_idx, min(last_chars, len(pred_text)), tail)
+    _flush()
 
 
 def pick_best_prediction(
@@ -160,8 +171,8 @@ def main():
     parser.add_argument(
         "--max_new_tokens",
         type=int,
-        default=384,
-        help="Max new tokens per CoT (round 1)",
+        default=2048,
+        help="Max new tokens (paper/repo: 2048 for GSM8K baseline and Judger decode)",
     )
     parser.add_argument(
         "--device",
@@ -179,7 +190,7 @@ def main():
         type=str,
         nargs="+",
         default=["single", "text_debate", "kv_rag"],
-        help="Which methods to run: single, text_debate, sequential_text_mas, sequential_latent_mas, kv_rag, latent_full_stitch, ...",
+        help="Which methods to run: single, single_agent_paper (fair baseline), text_debate, sequential_text_mas, sequential_latent_mas, kv_rag, ...",
     )
     parser.add_argument(
         "--start_idx",
@@ -299,6 +310,52 @@ def main():
         if device.type == "cuda":
             torch.cuda.empty_cache()
 
+    # Single-agent paper-aligned: same prompt/chat template/\\boxed{} and decoding as TextMAS/LatentMAS (fair comparison)
+    if "single_agent_paper" in args.methods:
+        log.info("")
+        log.info("--- Single-agent (paper-aligned: same prompt + decoding as MAS) ---")
+        t0 = time.perf_counter()
+        preds = []
+        total_tokens = 0
+        for i, ex in enumerate(dataset):
+            log.info("  [single_agent_paper] example %d/%d ...", i + 1, len(dataset))
+            _flush()
+            question = ex["question"]
+            gold = ex["answer"].split("####")[-1].strip()
+            pred_text, n_tok = run_single_agent_paper_aligned(
+                model,
+                tokenizer,
+                question,
+                device,
+                max_new_tokens=args.max_new_tokens,
+                do_sample=False,
+                temperature=0.6,
+                top_p=0.95,
+                max_prompt_length=2048,
+                use_chat_template=True,
+            )
+            total_tokens += n_tok
+            preds.append((pred_text, gold))
+            _log_example_prediction("single_agent_paper", i + 1, pred_text, gold)
+            if (i + 1) % 10 == 0:
+                elapsed = time.perf_counter() - t0
+                log.info(
+                    "  [single_agent_paper] %d/%d done in %.0fs (%.1fs/ex)",
+                    i + 1, len(dataset), elapsed, elapsed / (i + 1),
+                )
+                _flush()
+        acc, n = evaluate_gsm8k(preds, prefer_last=True)
+        results["single_agent_paper"] = {"accuracy": acc, "total_tokens": total_tokens, "n": n}
+        elapsed = time.perf_counter() - t0
+        log.info("  [single_agent_paper] DONE: accuracy=%.2f%%, tokens=%d, time=%.0fs", acc * 100, total_tokens, elapsed)
+        if args.output:
+            with open(args.output, "w") as f:
+                json.dump(results, f, indent=2)
+            log.info("  Saved to %s", args.output)
+        _flush()
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
     # Text-only two-agent debate
     if "text_debate" in args.methods:
         log.info("")
@@ -363,8 +420,8 @@ def main():
                 tokenizer,
                 question,
                 device,
-                max_new_tokens_per_stage=min(256, args.max_new_tokens),
-                do_sample=True,
+                max_new_tokens_per_stage=args.max_new_tokens,
+                do_sample=False,
                 temperature=0.6,
                 top_p=0.95,
                 max_prompt_length=2048,
@@ -372,6 +429,7 @@ def main():
             )
             total_tokens += n_tok
             preds.append((pred_text, gold))
+            _log_example_prediction("sequential_text_mas", i + 1, pred_text, gold)
             if (i + 1) % 10 == 0:
                 elapsed = time.perf_counter() - t0
                 log.info(
@@ -720,13 +778,14 @@ def main():
             _flush()
             question = ex["question"]
             gold = ex["answer"].split("####")[-1].strip()
-            # Paper-aligned: 40 latent steps per agent (Section 4, Fig 8), temp 0.6, top_p 0.95, 2048 max
+            # Paper-aligned: 40 latent steps; Judger decode 2048, greedy (do_sample_decode=False)
             lm_cfg = LatentMASConfig(
                 latent_steps_planner=40,
                 latent_steps_critic=40,
                 latent_steps_refiner=40,
-                max_new_tokens_decode=256,
+                max_new_tokens_decode=args.max_new_tokens,
                 max_prompt_length=2048,
+                do_sample_decode=False,
                 temperature_decode=0.6,
                 top_p_decode=0.95,
                 ridge_lambda=1e-4,
@@ -740,6 +799,7 @@ def main():
             )
             total_tokens += n_tok
             preds.append((pred_text, gold))
+            _log_example_prediction("sequential_latent_mas", i + 1, pred_text, gold)
             if (i + 1) % 10 == 0:
                 elapsed = time.perf_counter() - t0
                 log.info(

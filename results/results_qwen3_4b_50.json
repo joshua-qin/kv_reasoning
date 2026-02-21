@@ -1,0 +1,17 @@
+{
+  "single_agent_paper": {
+    "accuracy": 0.96,
+    "total_tokens": 33842,
+    "n": 50
+  },
+  "sequential_text_mas": {
+    "accuracy": 0.94,
+    "total_tokens": 99496,
+    "n": 50
+  },
+  "sequential_latent_mas": {
+    "accuracy": 0.72,
+    "total_tokens": 37000,
+    "n": 50
+  }
+}

@@ -13,6 +13,17 @@ import torch
 
 SYSTEM_PROMPT = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
 
+# Shared Judger/single-agent closing instructions (keep consistent with latentmas_fresh._judger_prompt)
+JUDGER_ANSWER_INSTRUCTIONS = """Solve the question. Give brief step-by-step reasoning, then on the last line give only your final numeric answer in this exact format: \\boxed{{NUMBER}}
+Do not add any text after \\boxed{{}}."""
+
+
+def _strip_chat_tokens(text: str) -> str:
+    """Remove Qwen chat control tokens that may appear in decoded output (e.g. </think>)."""
+    for tok in ("</think>", "<|im_start|>"):
+        text = text.replace(tok, "")
+    return text.strip()
+
 
 def _apply_chat_template(
     tokenizer: Any,
@@ -84,14 +95,56 @@ Now, output your refined plan below:
 def _judger_content(question: str, refiner_text: str) -> str:
     return f"""Target Question: {question}
 
-You are a helpful assistant. You are provided with a refined plan (for reference) and the target question to solve.
-
 Refined plan (for reference):
 {refiner_text}
 
-You must reason step-by-step to solve the provided Target Question without outputting other irrelevant information.
-Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
+{JUDGER_ANSWER_INSTRUCTIONS}
 """
+
+
+def _single_agent_paper_content(question: str) -> str:
+    """Single-agent CoT: same closing instructions as Judger for consistency."""
+    return f"""Target Question: {question}
+
+{JUDGER_ANSWER_INSTRUCTIONS}
+"""
+
+
+def run_single_agent_paper_aligned(
+    model: Any,
+    tokenizer: Any,
+    question: str,
+    device: torch.device,
+    max_new_tokens: int = 256,
+    do_sample: bool = True,
+    temperature: float = 0.6,
+    top_p: float = 0.95,
+    max_prompt_length: int = 2048,
+    use_chat_template: bool = True,
+) -> Tuple[str, int]:
+    """
+    Single-agent CoT with the same prompt style and decoding as Sequential TextMAS/LatentMAS:
+    same system prompt (Qwen), chat template, \\boxed{} answer format, and (by default) same
+    temperature/top_p. Use this for a fair comparison against sequential_text_mas and
+    sequential_latent_mas. Returns (decoded_text, num_output_tokens).
+    """
+    if use_chat_template:
+        prompt = _apply_chat_template(
+            tokenizer, SYSTEM_PROMPT, _single_agent_paper_content(question), add_generation_prompt=True
+        )
+    else:
+        prompt = SYSTEM_PROMPT + "\n\n" + _single_agent_paper_content(question) + "\n\nResponse:"
+    return _decode_one_stage(
+        model,
+        tokenizer,
+        prompt,
+        device,
+        max_new_tokens=max_new_tokens,
+        do_sample=do_sample,
+        temperature=temperature,
+        top_p=top_p,
+        max_prompt_length=max_prompt_length,
+    )
 
 
 def _decode_one_stage(
@@ -125,7 +178,7 @@ def _decode_one_stage(
         )
     prompt_len = ids.shape[1]
     new_ids = out[0, prompt_len:]
-    text = tokenizer.decode(new_ids, skip_special_tokens=True).strip()
+    text = _strip_chat_tokens(tokenizer.decode(new_ids, skip_special_tokens=True))
     return text, int(out.shape[1] - prompt_len)
 
 

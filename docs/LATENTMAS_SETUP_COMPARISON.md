@@ -2,7 +2,7 @@
 
 Comparison of our implementation and experiment settings to the LatentMAS paper (arXiv:2511.20639, Gen-Verse/LatentMAS).
 
-**LatentMAS is fixed and paper-aligned:** We use 40 latent steps per agent (Planner, Critic, Refiner), temperature 0.6, top-p 0.95, max prompt length 2048, ridge λ=1e-4, and Judger decode length 256. `run_experiment` and `LatentMASConfig` defaults are set to these values so you get the same hyperparameter choices as the paper when running experiments.
+**LatentMAS is fixed and paper-aligned:** We use 40 latent steps per agent (Planner, Critic, Refiner), temperature 0.6, top-p 0.95, max prompt length 2048, ridge λ=1e-4, and Judger decode length 2048 (matches repo `--max_new_tokens 2048`). `run_experiment` default `--max_new_tokens` is 2048 so single-agent, TextMAS, and LatentMAS all match the repo.
 
 **Token counting (paper-aligned):** We report **output tokens only** (generated text), not prompt or context length. Single agent: generated CoT tokens. Sequential TextMAS: sum of generated tokens over the 4 stages. LatentMAS: Judger decode tokens only. This matches the paper’s “reducing output token usage by 70.8%-83.7%” metric.
 
@@ -19,7 +19,9 @@ Comparison of our implementation and experiment settings to the LatentMAS paper 
 | **Decoding hyperparams** | Temperature 0.6, top-p 0.95 | `temperature_decode=0.6`, `top_p_decode=0.95` | ✓ |
 | **Chat template** | Official templates, `<\|im_start\|>`, `<\|im_end\|>` | `use_chat_template=True`, Qwen-style | ✓ |
 | **GSM8K max length** | 2,048 tokens (for ARC-Easy, ARC-Challenge, GSM8K) | `max_prompt_length=2048` | ✓ |
-| **GSM8K evaluation** | Numeric equality: extract final answer, normalize (lowercase, trim, remove punctuation), correct iff numeric match | `normalize_answer` + `is_correct`; we support `####` and `\boxed{}` | ✓ |
+| **Max new tokens (Judger / decode)** | Repo: `--max_new_tokens 2048` for baseline and GSM8K | `--max_new_tokens` default **2048**; single_agent_paper, TextMAS per stage, and LatentMAS Judger all use it | ✓ Matches repo for baseline/Judger. |
+| **TextMAS per-agent params** | Repo **run commands** use `--max_new_tokens 2048` for text_mas (and baseline, latent_mas); class default 256 is overridden by CLI | We use `args.max_new_tokens` (default 2048) per stage, `temperature=0.6`, `top_p=0.95` | ✓ Matches repo run commands (2048). Temperature: repo class default 0.7, we use 0.6 (LatentMAS-aligned). |
+| **GSM8K evaluation** | Numeric equality: extract final answer, normalize (strip + lower only in repo), correct iff string match | `normalize_answer_paper` (strip+lower) + `is_correct(..., use_paper_normalization=True)`; we support `####` and `\boxed{}`; extraction order aligned with Gen-Verse/LatentMAS | ✓ |
 
 ## What Differs
 
@@ -48,7 +50,19 @@ In the paper (Qwen3-4B), GSM8K is **Single 82.4%, LatentMAS 88.2%**—so LatentM
 
 Likely cause: **Qwen2-7B may not benefit from (or may be hurt by) the latent multi-agent pipeline.** For example, the Judger might not use the refiner KV context as effectively, or latent representations may not transfer as well for this model family. The paper’s gains are reported with Qwen3; the effect may be model-dependent. To check, run the same comparison with a Qwen3 model—if LatentMAS then beats Single, the implementation is consistent and the reversal is due to model choice.
 
-Small note: single-agent in `run_experiment` uses a different prompt (no chat template, no `\boxed{}`) and `evaluate_gsm8k(preds)` with default `prefer_last=False`; LatentMAS uses `prefer_last=True`. For a strict apple-to-apple comparison you could use the same prompt and same `prefer_last` for both; that’s unlikely to explain a 16-point gap but is worth aligning if you want to isolate the effect of the pipeline.
+**Fair comparison baseline:** We now provide **`single_agent_paper`**: same system prompt (Qwen), chat template, “output inside \boxed{}” instruction, and decoding (temperature 0.6, top_p 0.95) as TextMAS/LatentMAS. Use `--methods single_agent_paper sequential_text_mas sequential_latent_mas` for an apple-to-apple comparison. The legacy **`single`** baseline uses a plain prompt, no chat template, no \boxed{}, and greedy decoding—so it is not directly comparable to MAS.
+
+### Accuracy evaluation vs paper/Gen-Verse/LatentMAS
+
+Our evaluation is aligned with the [Gen-Verse/LatentMAS](https://github.com/Gen-Verse/LatentMAS) repo so that accuracy is directly comparable:
+
+- **Extraction** (`src/eval_gsm8k.extract_answer_gsm8k`): We support `#### <number>` and `\boxed{...}` (taking the last match). For `\boxed{}` we take the first number inside the last boxed expression, matching their `utils.extract_gsm8k_answer`. We also support “answer is X” and a last-number fallback.
+- **Normalization** (paper parity): We use **strip + lower only** by default (`normalize_answer_paper`), matching their `utils.normalize_answer`. So `"42"` and `"42.0"` are *not* considered equal (paper repo does not normalize numerics). Set `use_paper_normalization=False` in `evaluate_gsm8k` / `is_correct` if you want the more lenient behavior (commas removed, 42.0 → 42).
+- **Gold**: GSM8K gold is taken as the substring after `####` in the dataset answer; we normalize at comparison time with the same rule as the prediction.
+
+So reported accuracy in this codebase is comparable to the paper/GPU numbers when using the default `use_paper_normalization=True`.
+
+**Run commands:** The repo README runs baseline, text_mas, and latent_mas all with `--max_new_tokens 2048`. We do the same (default 2048). The only remaining difference is temperature: their `TextMASMethod` class default is 0.7; we use 0.6 for all MAS (LatentMAS paper).
 
 To align experiments further with the paper you could:
 1. Use Qwen3-4B/8B/14B when available.

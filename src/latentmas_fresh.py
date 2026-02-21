@@ -27,10 +27,19 @@ Design choices:
 
 from __future__ import annotations
 
+
+def _strip_chat_tokens(text: str) -> str:
+    """Remove Qwen chat control tokens that may appear in decoded output (e.g. </think>)."""
+    for tok in ("</think>", "<|im_start|>"):
+        text = text.replace(tok, "")
+    return text.strip()
+
 from dataclasses import dataclass
 from typing import Any, Dict, List, Tuple
 
 import torch
+
+from src.sequential_text_mas import JUDGER_ANSWER_INSTRUCTIONS
 import torch.nn.functional as F
 
 
@@ -47,7 +56,7 @@ class LatentMASConfig:
     latent_steps_planner: int = 40   # paper: m ∈ {0,10,20,40,80}, "optimal 40-80", "moderate budget"
     latent_steps_critic: int = 40
     latent_steps_refiner: int = 40
-    max_new_tokens_decode: int = 256  # Judger text decode; paper: "max length 2,048 for GSM8K" is context
+    max_new_tokens_decode: int = 2048  # Judger text decode; repo uses --max_new_tokens 2048 for GSM8K
     min_tokens_before_eos: int = 10   # fallback path only; not used in model.generate() path
     ridge_lambda: float = 1e-4        # paper Appendix A: λ > 0 for numerical stability
     do_sample_decode: bool = True     # paper: "temperature 0.6 and top-p 0.95"
@@ -304,7 +313,7 @@ def _decode_from_past(
     sequences = outputs.sequences
     prompt_len = ids.shape[1]
     generated_ids = sequences[0, prompt_len:]
-    text = tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
+    text = _strip_chat_tokens(tokenizer.decode(generated_ids, skip_special_tokens=True))
     return text, int(sequences.shape[1] - prompt_len)
 
 
@@ -355,7 +364,7 @@ def _decode_from_scratch(
                 break
     prompt_len = ids.shape[1]
     new_tokens = generated[0, prompt_len:]
-    return tokenizer.decode(new_tokens, skip_special_tokens=True)
+    return _strip_chat_tokens(tokenizer.decode(new_tokens, skip_special_tokens=True))
 
 
 def _apply_chat_template(
@@ -422,16 +431,10 @@ Now, output your refined plan below:
 
 
 def _judger_prompt(question: str) -> str:
-    """Sequential LatentMAS Judger for GSM8K (paper Appendix E). Last agent: text decode only, no latent."""
+    """Sequential LatentMAS Judger: same instructions as TextMAS Judger for consistency."""
     return f"""Target Question: {question}
 
-You are a helpful assistant. You are provided with latent information for reference and a target question to solve.
-
-The latent information might contain irrelevant contents. Ignore it if it is not helpful for solving the target question.
-
-You must reason step-by-step to solve the provided Target Question without outputting other irrelevant information.
-
-Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
+{JUDGER_ANSWER_INSTRUCTIONS}
 """
 
 
