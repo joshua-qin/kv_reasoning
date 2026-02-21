@@ -1,19 +1,34 @@
 """
 Fresh LatentMAS implementation (independent of existing pipeline code).
 
-Pipeline:
-  solver (latent thoughts) -> critic (latent thoughts) -> solver (latent thoughts) -> final decode
+Pipeline (aligned with paper + official repo):
+
+  Intermediary agents (Planner, Critic, Refiner):
+    - Each gets system prompt + question (and for Critic/Refiner: KV cache from the previous agent).
+    - Standard latent rollout: prefill prompt on top of previous KV (KV concatenate), then
+      latent autoregression (e_t = h_t @ W_a), no text decode. Output is only in latent/KV form.
+
+  Last agent (Judger):
+    - Same: system prompt + question + previous agent's KV cache (refiner cache).
+    - No latent rollout. It takes the refiner KV cache, prefills the Judger prompt on top,
+      then does standard LLM autoregressive decode to produce the final text answer.
+
+  So: intermediary = latent rollout + KV concat from previous; last = KV cache + decode only.
+  Paper (Section 3.2–3.3): "only the last agent decoding the final answer"; KV "layer-wise
+  concatenation" via past_key_values. Official code (Gen-Verse/LatentMAS): intermediary agents
+  use generate_latent_batch(..., past_key_values=past_kv); Judger uses generate_text_batch(
+  judger_ids, ..., past_key_values=past_for_decoding) only — no latent steps.
 
 Design choices:
   - Full working-memory transfer by passing full past_key_values from one stage to next.
-  - No intermediate text decoding; only final answer is decoded.
+  - Chat template (<|im_start|> / <|im_end|>) per paper Appendix C.2.
   - Latent autoregression uses e_t = h_t @ W_a where W_a is the paper's ridge solution.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 import torch
 import torch.nn.functional as F
@@ -22,19 +37,24 @@ import torch.nn.functional as F
 PastKVs = Tuple[Tuple[torch.Tensor, torch.Tensor], ...]
 _WA_CACHE: Dict[Tuple[int, float], torch.Tensor] = {}
 
+# Paper Appendix C.2 + official prompts
+SYSTEM_PROMPT_PAPER = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
+
 
 @dataclass
 class LatentMASConfig:
-    latent_steps_solver_1: int = 40
-    latent_steps_critic: int = 32
-    latent_steps_solver_2: int = 32
-    max_new_tokens_decode: int = 128
-    ridge_lambda: float = 1e-4
-    do_sample_decode: bool = False
-    temperature_decode: float = 0.2
-    top_p_decode: float = 1.0
-    max_prompt_length: int = 2048
-    system_prompt: str = "You are a precise reasoner."
+    """Paper-aligned defaults (Section 4 + Appendix): m=40 latent steps, temp=0.6, top_p=0.95, 2048 max length."""
+    latent_steps_planner: int = 40   # paper: m ∈ {0,10,20,40,80}, "optimal 40-80", "moderate budget"
+    latent_steps_critic: int = 40
+    latent_steps_refiner: int = 40
+    max_new_tokens_decode: int = 256  # Judger text decode; paper: "max length 2,048 for GSM8K" is context
+    min_tokens_before_eos: int = 10   # fallback path only; not used in model.generate() path
+    ridge_lambda: float = 1e-4        # paper Appendix A: λ > 0 for numerical stability
+    do_sample_decode: bool = True     # paper: "temperature 0.6 and top-p 0.95"
+    temperature_decode: float = 0.6
+    top_p_decode: float = 0.95
+    max_prompt_length: int = 2048    # paper: "2,048 tokens for ARC-Easy, ARC-Challenge, and GSM8K"
+    use_chat_template: bool = True   # paper Appendix C.2: official chat templates
 
 
 def _to_past_tuple(cache: Any) -> PastKVs:
@@ -61,11 +81,18 @@ def _sample_next_token(
     do_sample: bool,
     temperature: float = 1.0,
     top_p: float = 1.0,
+    suppress_eos_id: int | None = None,
 ) -> torch.Tensor:
+    """Sample one next token. If suppress_eos_id is set, mask it out so we don't sample EOS (for min-tokens guard)."""
+    if suppress_eos_id is not None:
+        logits = logits.clone()
+        logits[..., suppress_eos_id] = -float("inf")
     if not do_sample:
         return logits.argmax(dim=-1, keepdim=True)
     temperature = max(float(temperature), 1e-5)
     probs = F.softmax(logits / temperature, dim=-1)
+    if suppress_eos_id is not None:
+        probs = probs / probs.sum(dim=-1, keepdim=True).clamp_min(1e-8)
     top_p = float(top_p)
     if top_p < 1.0:
         sorted_probs, sorted_indices = torch.sort(probs, descending=True, dim=-1)
@@ -231,30 +258,78 @@ def _decode_from_past(
     do_sample: bool,
     temperature: float,
     top_p: float,
+    min_tokens_before_eos: int = 10,
 ) -> Tuple[str, int]:
     """
-    Decode final text only once from latent memory.
+    Last agent only: Judger decode via model.generate() with past_key_values (official
+    Gen-Verse/LatentMAS generate_text_batch implementation). Takes refiner KV cache,
+    prefills Judger prompt, then standard LLM decode. No latent rollout.
     """
     dev = next(model.parameters()).device
     config = getattr(model, "config", model.model.config)
+    ids = tokenizer(prompt, return_tensors="pt", add_special_tokens=False).input_ids.to(dev)
+    past_len = past[0][0].shape[2]
+    attention_mask = torch.ones_like(ids, dtype=torch.long, device=dev)
+    cache_position = torch.arange(
+        past_len,
+        past_len + ids.shape[-1],
+        dtype=torch.long,
+        device=dev,
+    )
+    if past_len > 0:
+        past_mask = torch.ones(
+            (attention_mask.shape[0], past_len),
+            dtype=attention_mask.dtype,
+            device=dev,
+        )
+        attention_mask = torch.cat([past_mask, attention_mask], dim=-1)
+    pad_id = getattr(tokenizer, "pad_token_id", None)
+    if pad_id is None:
+        pad_id = getattr(tokenizer, "eos_token_id", 0)
+    past_cache = _tuple_to_dynamic(past, config)
+    with torch.no_grad():
+        outputs = model.generate(
+            ids,
+            attention_mask=attention_mask,
+            max_new_tokens=max_new_tokens,
+            temperature=max(float(temperature), 1e-5),
+            top_p=float(top_p),
+            do_sample=do_sample,
+            pad_token_id=pad_id,
+            eos_token_id=tokenizer.eos_token_id,
+            past_key_values=past_cache,
+            cache_position=cache_position,
+            return_dict_in_generate=True,
+        )
+    sequences = outputs.sequences
+    prompt_len = ids.shape[1]
+    generated_ids = sequences[0, prompt_len:]
+    text = tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
+    return text, int(sequences.shape[1])
+
+
+def _decode_from_scratch(
+    model: Any,
+    tokenizer: Any,
+    prompt: str,
+    max_new_tokens: int,
+    do_sample: bool,
+    temperature: float,
+    top_p: float,
+) -> str:
+    """Decode from scratch (no past). Used when decode-from-past returns empty (e.g. EOS immediately)."""
+    dev = next(model.parameters()).device
     ids = tokenizer(prompt, return_tensors="pt").input_ids.to(dev)
-    cache = past
-    pos0 = cache[0][0].shape[2]
-    pos_ids = torch.arange(pos0, pos0 + ids.shape[1], device=dev, dtype=torch.long).unsqueeze(0)
-    attn = torch.ones((1, pos0 + ids.shape[1]), dtype=torch.long, device=dev)
-    past_dyn = _tuple_to_dynamic(cache, config)
     with torch.no_grad():
         out = model(
             input_ids=ids,
-            attention_mask=attn,
-            position_ids=pos_ids,
-            past_key_values=past_dyn,
+            attention_mask=torch.ones_like(ids, dtype=torch.long, device=dev),
             use_cache=True,
             return_dict=True,
         )
-        cache = _to_past_tuple(out.past_key_values)
         generated = ids.clone()
-        cur_pos = pos0 + ids.shape[1]
+        past = _to_past_tuple(out.past_key_values)
+        cur_pos = ids.shape[1]
         for _ in range(max_new_tokens - 1):
             logits = out.logits[:, -1, :]
             nxt = _sample_next_token(
@@ -264,7 +339,8 @@ def _decode_from_past(
                 top_p=top_p,
             )
             generated = torch.cat([generated, nxt], dim=1)
-            past_dyn = _tuple_to_dynamic(cache, config)
+            config = getattr(model, "config", model.model.config)
+            past_dyn = _tuple_to_dynamic(past, config)
             out = model(
                 input_ids=nxt,
                 attention_mask=torch.ones((1, cur_pos + 1), dtype=torch.long, device=dev),
@@ -273,44 +349,108 @@ def _decode_from_past(
                 use_cache=True,
                 return_dict=True,
             )
-            cache = _to_past_tuple(out.past_key_values)
+            past = _to_past_tuple(out.past_key_values)
             cur_pos += 1
             if tokenizer.eos_token_id is not None and nxt.item() == tokenizer.eos_token_id:
                 break
-    return tokenizer.decode(generated[0], skip_special_tokens=True), int(generated.shape[1])
+    prompt_len = ids.shape[1]
+    new_tokens = generated[0, prompt_len:]
+    return tokenizer.decode(new_tokens, skip_special_tokens=True)
 
 
-def _solver_prompt(question: str, system_prompt: str) -> str:
-    return (
-        f"{system_prompt}\n\n"
-        "You are Solver. Solve the problem carefully in latent reasoning. "
-        "Do not output final number yet.\n\n"
-        f"Question: {question}\n\n"
-        "Latent reasoning:"
+def _apply_chat_template(
+    tokenizer: Any,
+    system: str,
+    user_content: str,
+    add_generation_prompt: bool = True,
+) -> str:
+    """Format using the tokenizer's chat template (paper: <|im_start|> and <|im_end|>). Requires jinja2>=3.1.0."""
+    messages: List[Dict[str, str]] = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": user_content},
+    ]
+    return tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=add_generation_prompt,
     )
 
 
-def _critic_prompt(question: str, system_prompt: str) -> str:
-    return (
-        f"{system_prompt}\n\n"
-        "You are Critic. Audit prior latent reasoning for mistakes and missing constraints. "
-        "Do not output final number yet.\n\n"
-        f"Question: {question}\n\n"
-        "Latent critique:"
-    )
+def _planner_prompt(question: str) -> str:
+    """Sequential LatentMAS Planner (paper Appendix E, GSM8K)."""
+    return f"""You are a Planner Agent. Given an input question, design a clear, step-by-step plan for how to solve the question.
+
+Question: {question}
+
+Your outlined plan should be concise with a few bulletpoints for each step. Do not produce the final answer.
+Now output your plan to solve the question below:
+"""
 
 
-def _solver_refine_prompt(question: str, system_prompt: str) -> str:
-    return (
-        f"{system_prompt}\n\n"
-        "You are Solver again. Integrate critique and finalize latent reasoning. "
-        "Do not output final number yet.\n\n"
-        f"Question: {question}\n\n"
-        "Latent refinement:"
-    )
+def _critic_prompt(question: str) -> str:
+    """Sequential LatentMAS Critic (paper Appendix E)."""
+    return f"""
+Question: {question}
+
+You are a Critic Agent to evaluate the correctness of the input plan for the given question and provide helpful feedback for improving the plan.
+The plan information is provided in latent KV representation format. Review the plan and question and output:
+(1) original plan contents
+(2) constructive feedback on the original plan.
+
+Format your response as follows:
+Original Plan: [Copy the provided Planner Agent's plan here]
+Feedback: [Your detailed feedback to improve the plan here]
+
+Now, output your response below:
+"""
 
 
-def run_latentmas_solver_critic_solver(
+def _refiner_prompt(question: str) -> str:
+    """Sequential LatentMAS Refiner (paper Appendix E)."""
+    return f"""
+Question: {question}
+
+You are a Refiner Agent to provide a refined step-by-step plan for solving the given question.
+You are provided with:
+(1) latent-format information: a previous plan with feedback
+(2) text-format information: the input question you need to solve.
+
+Based on the input, write a refined and improved plan to solve the question. Make sure your output plan is correct and concise.
+
+Now, output your refined plan below:
+"""
+
+
+def _judger_prompt(question: str) -> str:
+    """Sequential LatentMAS Judger for GSM8K (paper Appendix E). Last agent: text decode only, no latent."""
+    return f"""Target Question: {question}
+
+You are a helpful assistant. You are provided with latent information for reference and a target question to solve.
+
+The latent information might contain irrelevant contents. Ignore it if it is not helpful for solving the target question.
+
+You must reason step-by-step to solve the provided Target Question without outputting other irrelevant information.
+
+Now, reason step by step and output the final answer inside \\boxed{{YOUR_FINAL_ANSWER}}.
+"""
+
+
+def _prompt_text(
+    tokenizer: Any,
+    role_content: str,
+    use_chat_template: bool,
+) -> str:
+    if use_chat_template:
+        return _apply_chat_template(
+            tokenizer,
+            system=SYSTEM_PROMPT_PAPER,
+            user_content=role_content,
+            add_generation_prompt=True,
+        )
+    return SYSTEM_PROMPT_PAPER + "\n\n" + role_content + "\n\nResponse:"
+
+
+def run_sequential_latent_mas(
     model: Any,
     tokenizer: Any,
     question: str,
@@ -318,81 +458,70 @@ def run_latentmas_solver_critic_solver(
     cfg: LatentMASConfig | None = None,
 ) -> Tuple[str, int]:
     """
-    Strict fresh LatentMAS-style flow:
-      1) Solver prefill + latent rollout
-      2) Critic prefill WITH full solver memory + latent rollout
-      3) Solver-refine prefill WITH full critic memory + latent rollout
-      4) Decode final answer once
+    4-agent sequential LatentMAS (paper + official repo): Planner -> Critic -> Refiner -> Judger.
+    Intermediary agents: each gets prompt + previous stage KV cache, then latent rollout only (no text decode).
+    Judger: gets prompt + refiner KV cache, then standard LLM decode to text only.
+
+    1) Planner: prefill from scratch -> latent rollout -> cache_p
+    2) Critic:  prefill with past=cache_p (KV concat) -> latent rollout -> cache_c
+    3) Refiner: prefill with past=cache_c (KV concat) -> latent rollout -> cache_r
+    4) Judger:  prefill with past=cache_r (KV concat), then decode to text (no latent steps)
     """
     if cfg is None:
         cfg = LatentMASConfig()
 
+    use_chat = cfg.use_chat_template
     wa = compute_wa(model, device=device, ridge_lambda=cfg.ridge_lambda)
 
-    # Stage 1: solver latent reasoning
-    cache_s1, h_s1 = _prefill_from_scratch(
-        model,
-        tokenizer,
-        _solver_prompt(question, cfg.system_prompt),
-        device=device,
-        max_length=cfg.max_prompt_length,
+    # Stage 1: Planner (latent)
+    prompt_planner = _prompt_text(tokenizer, _planner_prompt(question), use_chat)
+    cache_p, h_p = _prefill_from_scratch(
+        model, tokenizer, prompt_planner, device=device, max_length=cfg.max_prompt_length
     )
-    cache_s1, _ = latent_rollout(
-        model,
-        cache_s1,
-        h_s1,
-        wa,
-        latent_steps=cfg.latent_steps_solver_1,
+    cache_p, _ = latent_rollout(
+        model, cache_p, h_p, wa, latent_steps=cfg.latent_steps_planner
     )
 
-    # Stage 2: critic receives full solver working memory
+    # Stage 2: Critic (latent)
+    prompt_critic = _prompt_text(tokenizer, _critic_prompt(question), use_chat)
     cache_c, h_c = _prefill_with_past(
-        model,
-        tokenizer,
-        _critic_prompt(question, cfg.system_prompt),
-        past=cache_s1,
-        device=device,
-        max_length=cfg.max_prompt_length,
+        model, tokenizer, prompt_critic, past=cache_p, device=device, max_length=cfg.max_prompt_length
     )
     cache_c, _ = latent_rollout(
-        model,
-        cache_c,
-        h_c,
-        wa,
-        latent_steps=cfg.latent_steps_critic,
+        model, cache_c, h_c, wa, latent_steps=cfg.latent_steps_critic
     )
 
-    # Stage 3: solver receives full critic working memory
-    cache_s2, h_s2 = _prefill_with_past(
-        model,
-        tokenizer,
-        _solver_refine_prompt(question, cfg.system_prompt),
-        past=cache_c,
-        device=device,
-        max_length=cfg.max_prompt_length,
+    # Stage 3: Refiner (latent)
+    prompt_refiner = _prompt_text(tokenizer, _refiner_prompt(question), use_chat)
+    cache_r, h_r = _prefill_with_past(
+        model, tokenizer, prompt_refiner, past=cache_c, device=device, max_length=cfg.max_prompt_length
     )
-    cache_s2, _ = latent_rollout(
-        model,
-        cache_s2,
-        h_s2,
-        wa,
-        latent_steps=cfg.latent_steps_solver_2,
-    )
+    cache_r, _ = latent_rollout(model, cache_r, h_r, wa, latent_steps=cfg.latent_steps_refiner)
 
-    # Final decode
-    decode_prompt = (
-        "\n\nNow output only the final numeric answer in this format: #### <number>\n"
-        "Final answer:"
-    )
+    # Stage 4: Judger — KV from refiner + Judger prompt; standard LLM decode only (no latent rollout)
+    prompt_judger = _prompt_text(tokenizer, _judger_prompt(question), use_chat)
     final_text, decode_tokens = _decode_from_past(
         model,
         tokenizer,
-        cache_s2,
-        prompt=decode_prompt,
+        cache_r,
+        prompt=prompt_judger,
         max_new_tokens=cfg.max_new_tokens_decode,
         do_sample=cfg.do_sample_decode,
         temperature=cfg.temperature_decode,
         top_p=cfg.top_p_decode,
+        min_tokens_before_eos=cfg.min_tokens_before_eos,
     )
-    total_positions = int(cache_s2[0][0].shape[2] + decode_tokens)
-    return final_text, total_positions
+    # Fallback only if still empty (e.g. all generated tokens were special)
+    if not (final_text and final_text.strip()):
+        final_text = _decode_from_scratch(
+            model,
+            tokenizer,
+            prompt=prompt_judger,
+            max_new_tokens=cfg.max_new_tokens_decode,
+            do_sample=cfg.do_sample_decode,
+            temperature=cfg.temperature_decode,
+            top_p=cfg.top_p_decode,
+        )
+        decode_tokens = 0
+    # Paper-aligned: report output tokens only (Judger decode), not total context positions
+    return final_text, decode_tokens

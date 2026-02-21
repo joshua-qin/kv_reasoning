@@ -12,6 +12,7 @@ def extract_answer_gsm8k(text: str, prefer_last: bool = False) -> Optional[str]:
     """
     GSM8K answers are usually at the end. Common patterns:
     - "#### 1234" or "#### 12.34"
+    - "\\boxed{42}" or "\\boxed{12.34}" (LatentMAS paper format)
     - "the answer is 42" / "Answer: 42"
     - "$42" at end
     prefer_last: if False, use first #### (original); if True, use last (standard for single-turn CoT).
@@ -21,6 +22,10 @@ def extract_answer_gsm8k(text: str, prefer_last: bool = False) -> Optional[str]:
     if matches:
         m = matches[-1] if prefer_last else matches[0]
         return m.group(1).strip()
+    # \boxed{number} or \boxed{letter} (LatentMAS / common math format)
+    boxed = re.search(r"\\boxed\{([^}]+)\}", text)
+    if boxed:
+        return boxed.group(1).strip()
     # "answer is X" (case insensitive)
     m = re.search(r"(?:answer|final answer)\s*[:\s]+\s*([-+]?\d+(?:\.\d+)?)", text, re.I)
     if m:
@@ -64,14 +69,16 @@ def load_gsm8k(split: str = "test", max_samples: Optional[int] = None):
 
 def evaluate_gsm8k(
     items: List[Tuple[str, str]],
+    prefer_last: bool = False,
 ) -> Tuple[float, int]:
     """
     items: list of (prediction_text, gold_answer).
+    prefer_last: pass to extract_answer_gsm8k (use last #### match, e.g. for LatentMAS decode).
     Returns (accuracy, total).
     """
     correct = 0
     for pred_text, gold in items:
-        pred_ans = extract_answer_gsm8k(pred_text)
+        pred_ans = extract_answer_gsm8k(pred_text, prefer_last=prefer_last)
         if is_correct(pred_ans, gold):
             correct += 1
     total = len(items)

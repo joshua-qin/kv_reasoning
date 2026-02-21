@@ -1,0 +1,7 @@
+{
+  "single_agent": {
+    "accuracy": 0.53,
+    "total_tokens": 38400,
+    "n": 100
+  }
+}

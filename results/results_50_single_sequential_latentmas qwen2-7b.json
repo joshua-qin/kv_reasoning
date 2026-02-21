@@ -1,0 +1,17 @@
+{
+  "single_agent": {
+    "accuracy": 0.78,
+    "total_tokens": 14642,
+    "n": 50
+  },
+  "sequential_text_mas": {
+    "accuracy": 0.54,
+    "total_tokens": 38247,
+    "n": 50
+  },
+  "latentmas_solver_critic_solver": {
+    "accuracy": 0.54,
+    "total_tokens": 33617,
+    "n": 50
+  }
+}

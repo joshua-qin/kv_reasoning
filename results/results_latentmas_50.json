@@ -1,0 +1,7 @@
+{
+  "latentmas_solver_critic_solver": {
+    "accuracy": 0.62,
+    "total_tokens": 32474,
+    "n": 50
+  }
+}

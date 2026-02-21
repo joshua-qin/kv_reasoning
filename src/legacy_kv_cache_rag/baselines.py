@@ -18,12 +18,13 @@ def single_agent_cot(
     max_new_tokens: int = 512,
     system_prompt: str = "You are a precise reasoner. Solve the following problem and give your final answer.",
 ) -> Tuple[str, int]:
-    """One model, one CoT. Returns (decoded_response, num_tokens)."""
+    """One model, one CoT. Returns (decoded_response, num_output_tokens). Paper-aligned: output tokens only."""
     prompt = f"{system_prompt}\n\nProblem: {question}\n\nReasoning:"
     ids = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).input_ids.to(device)
     generated, _ = get_full_kv_cache(model, tokenizer, ids, device, max_new_tokens=max_new_tokens)
     text = tokenizer.decode(generated[0], skip_special_tokens=True)
-    return text, generated.shape[1]
+    num_output_tokens = int(generated.shape[1] - ids.shape[1])
+    return text, num_output_tokens
 
 
 def two_agent_text_debate(
@@ -55,5 +56,6 @@ def two_agent_text_debate(
         model, tokenizer, ids_b, device, max_new_tokens=max_new_tokens_per_turn
     )
     text_b = tokenizer.decode(out_b[0], skip_special_tokens=True)
-    total_tokens = out_a.shape[1] + out_b.shape[1]
+    # Paper-aligned: output tokens only (generated, not prompt)
+    total_tokens = int((out_a.shape[1] - ids_a.shape[1]) + (out_b.shape[1] - ids_b.shape[1]))
     return text_a, text_b, total_tokens
