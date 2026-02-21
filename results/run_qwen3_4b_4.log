@@ -1,0 +1,656 @@
+[21:03:44] INFO: ============================================================
+[21:03:44] INFO: KV Cache RAG experiment
+[21:03:44] INFO:   model=Qwen/Qwen3-4B  device=cuda  max_eval=4  methods=['single_agent_paper', 'sequential_text_mas', 'sequential_latent_mas']  retrieval_score=similarity
+[21:03:44] INFO:   output=results/results_qwen3_4b_4.json
+[21:03:44] INFO: ============================================================
+[21:03:44] INFO: Loaded existing results from results/results_qwen3_4b_4.json (will update only run methods).
+[21:03:44] INFO: Loading GSM8K...
+[21:03:45] INFO: TensorFlow version 2.19.0 available.
+[21:03:45] INFO: JAX version 0.6.0 available.
+[21:03:45] INFO: HTTP Request: HEAD https://huggingface.co/datasets/gsm8k/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[21:03:45] INFO: HTTP Request: HEAD https://huggingface.co/datasets/openai/gsm8k/resolve/main/README.md "HTTP/1.1 307 Temporary Redirect"
+[21:03:45] INFO: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/datasets/openai/gsm8k/cc7b047b6e5bb11b4f1af84efc572db110a51b3c/README.md "HTTP/1.1 200 OK"
+[21:03:45] INFO: HTTP Request: HEAD https://huggingface.co/datasets/gsm8k/resolve/cc7b047b6e5bb11b4f1af84efc572db110a51b3c/gsm8k.py "HTTP/1.1 307 Temporary Redirect"
+[21:03:45] INFO: HTTP Request: HEAD https://huggingface.co/datasets/openai/gsm8k/resolve/cc7b047b6e5bb11b4f1af84efc572db110a51b3c/gsm8k.py "HTTP/1.1 404 Not Found"
+[21:03:45] INFO: HTTP Request: HEAD https://s3.amazonaws.com/datasets.huggingface.co/datasets/datasets/gsm8k/gsm8k.py "HTTP/1.1 404 Not Found"
+[21:03:45] INFO: HTTP Request: GET https://huggingface.co/api/datasets/gsm8k/revision/cc7b047b6e5bb11b4f1af84efc572db110a51b3c "HTTP/1.1 307 Temporary Redirect"
+[21:03:45] INFO: HTTP Request: GET https://huggingface.co/api/datasets/openai/gsm8k/revision/cc7b047b6e5bb11b4f1af84efc572db110a51b3c "HTTP/1.1 200 OK"
+[21:03:45] INFO: HTTP Request: HEAD https://huggingface.co/datasets/gsm8k/resolve/cc7b047b6e5bb11b4f1af84efc572db110a51b3c/.huggingface.yaml "HTTP/1.1 307 Temporary Redirect"
+[21:03:45] INFO: HTTP Request: HEAD https://huggingface.co/datasets/openai/gsm8k/resolve/cc7b047b6e5bb11b4f1af84efc572db110a51b3c/.huggingface.yaml "HTTP/1.1 404 Not Found"
+[21:03:45] INFO: HTTP Request: GET https://datasets-server.huggingface.co/info?dataset=gsm8k "HTTP/1.1 404 Not Found"
+[21:03:45] INFO: HTTP Request: GET https://huggingface.co/api/datasets/gsm8k/tree/cc7b047b6e5bb11b4f1af84efc572db110a51b3c/main?recursive=true&expand=false "HTTP/1.1 307 Temporary Redirect"
+[21:03:45] INFO: HTTP Request: GET https://huggingface.co/api/datasets/openai/gsm8k/tree/cc7b047b6e5bb11b4f1af84efc572db110a51b3c/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[21:03:45] INFO: HTTP Request: GET https://huggingface.co/api/datasets/gsm8k/tree/cc7b047b6e5bb11b4f1af84efc572db110a51b3c?recursive=false&expand=false "HTTP/1.1 307 Temporary Redirect"
+[21:03:45] INFO: HTTP Request: GET https://huggingface.co/api/datasets/openai/gsm8k/tree/cc7b047b6e5bb11b4f1af84efc572db110a51b3c?recursive=false&expand=false "HTTP/1.1 200 OK"
+[21:03:45] INFO: HTTP Request: HEAD https://huggingface.co/datasets/gsm8k/resolve/cc7b047b6e5bb11b4f1af84efc572db110a51b3c/dataset_infos.json "HTTP/1.1 307 Temporary Redirect"
+[21:03:45] INFO: HTTP Request: HEAD https://huggingface.co/datasets/openai/gsm8k/resolve/cc7b047b6e5bb11b4f1af84efc572db110a51b3c/dataset_infos.json "HTTP/1.1 404 Not Found"
+[21:03:45] INFO: Evaluating examples 0–3 (n=4)
+[21:03:45] INFO: Loading model and tokenizer (this may take a minute)...
+[21:03:47] INFO: HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3-4B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+[21:03:47] INFO: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen3-4B/1cfa9a7208912126459214e8b04321603b3df60c/config.json "HTTP/1.1 200 OK"
+[21:03:47] INFO: HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3-4B/resolve/main/tokenizer_config.json "HTTP/1.1 307 Temporary Redirect"
+[21:03:47] INFO: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen3-4B/1cfa9a7208912126459214e8b04321603b3df60c/tokenizer_config.json "HTTP/1.1 200 OK"
+[21:03:47] INFO: HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen3-4B/tree/main/additional_chat_templates?recursive=false&expand=false "HTTP/1.1 404 Not Found"
+[21:03:47] INFO: HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen3-4B/tree/main?recursive=true&expand=false "HTTP/1.1 200 OK"
+[21:03:49] INFO: HTTP Request: GET https://huggingface.co/api/models/Qwen/Qwen3-4B "HTTP/1.1 200 OK"
+[21:03:49] INFO: HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3-4B/resolve/main/config.json "HTTP/1.1 307 Temporary Redirect"
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[21:03:49] WARNING: Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[21:03:49] INFO: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen3-4B/1cfa9a7208912126459214e8b04321603b3df60c/config.json "HTTP/1.1 200 OK"
+Loading weights:   0%|          | 0/398 [00:00<?, ?it/s]Loading weights:   0%|          | 1/398 [00:00<00:00, 16777.22it/s, Materializing param=model.embed_tokens.weight]Loading weights:   0%|          | 1/398 [00:00<00:00, 6000.43it/s, Materializing param=model.embed_tokens.weight] Loading weights:   1%|          | 2/398 [00:00<00:07, 51.43it/s, Materializing param=model.layers.0.input_layernorm.weight]Loading weights:   1%|          | 2/398 [00:00<00:07, 51.28it/s, Materializing param=model.layers.0.input_layernorm.weight]Loading weights:   1%|          | 3/398 [00:00<00:05, 76.51it/s, Materializing param=model.layers.0.mlp.down_proj.weight]  Loading weights:   1%|          | 3/398 [00:00<00:05, 76.32it/s, Materializing param=model.layers.0.mlp.down_proj.weight]Loading weights:   1%|          | 4/398 [00:00<00:04, 87.97it/s, Materializing param=model.layers.0.mlp.gate_proj.weight]Loading weights:   1%|          | 4/398 [00:00<00:04, 87.78it/s, Materializing param=model.layers.0.mlp.gate_proj.weight]Loading weights:   1%|▏         | 5/398 [00:00<00:04, 94.76it/s, Materializing param=model.layers.0.mlp.up_proj.weight]  Loading weights:   1%|▏         | 5/398 [00:00<00:04, 94.57it/s, Materializing param=model.layers.0.mlp.up_proj.weight]Loading weights:   2%|▏         | 6/398 [00:00<00:03, 99.81it/s, Materializing param=model.layers.0.post_attention_layernorm.weight]Loading weights:   2%|▏         | 6/398 [00:00<00:03, 99.63it/s, Materializing param=model.layers.0.post_attention_layernorm.weight]Loading weights:   2%|▏         | 7/398 [00:00<00:03, 115.89it/s, Materializing param=model.layers.0.self_attn.k_norm.weight]       Loading weights:   2%|▏         | 7/398 [00:00<00:03, 115.71it/s, Materializing param=model.layers.0.self_attn.k_norm.weight]Loading weights:   2%|▏         | 8/398 [00:00<00:02, 131.89it/s, Materializing param=model.layers.0.self_attn.k_proj.weight]Loading weights:   2%|▏         | 8/398 [00:00<00:02, 131.72it/s, Materializing param=model.layers.0.self_attn.k_proj.weight]Loading weights:   2%|▏         | 9/398 [00:00<00:02, 147.35it/s, Materializing param=model.layers.0.self_attn.o_proj.weight]Loading weights:   2%|▏         | 9/398 [00:00<00:02, 147.12it/s, Materializing param=model.layers.0.self_attn.o_proj.weight]Loading weights:   3%|▎         | 10/398 [00:00<00:02, 156.75it/s, Materializing param=model.layers.0.self_attn.q_norm.weight]Loading weights:   3%|▎         | 10/398 [00:00<00:02, 156.50it/s, Materializing param=model.layers.0.self_attn.q_norm.weight]Loading weights:   3%|▎         | 11/398 [00:00<00:02, 161.41it/s, Materializing param=model.layers.0.self_attn.q_proj.weight]Loading weights:   3%|▎         | 11/398 [00:00<00:02, 161.01it/s, Materializing param=model.layers.0.self_attn.q_proj.weight]Loading weights:   3%|▎         | 12/398 [00:00<00:02, 175.11it/s, Materializing param=model.layers.0.self_attn.v_proj.weight]Loading weights:   3%|▎         | 12/398 [00:00<00:02, 174.90it/s, Materializing param=model.layers.0.self_attn.v_proj.weight]Loading weights:   3%|▎         | 13/398 [00:00<00:02, 189.11it/s, Materializing param=model.layers.1.input_layernorm.weight] Loading weights:   3%|▎         | 13/398 [00:00<00:02, 188.91it/s, Materializing param=model.layers.1.input_layernorm.weight]Loading weights:   4%|▎         | 14/398 [00:00<00:01, 203.08it/s, Materializing param=model.layers.1.mlp.down_proj.weight]  Loading weights:   4%|▎         | 14/398 [00:00<00:01, 202.87it/s, Materializing param=model.layers.1.mlp.down_proj.weight]Loading weights:   4%|▍         | 15/398 [00:00<00:01, 201.42it/s, Materializing param=model.layers.1.mlp.gate_proj.weight]Loading weights:   4%|▍         | 15/398 [00:00<00:01, 201.16it/s, Materializing param=model.layers.1.mlp.gate_proj.weight]Loading weights:   4%|▍         | 16/398 [00:00<00:01, 197.00it/s, Materializing param=model.layers.1.mlp.up_proj.weight]  Loading weights:   4%|▍         | 16/398 [00:00<00:01, 196.75it/s, Materializing param=model.layers.1.mlp.up_proj.weight]Loading weights:   4%|▍         | 17/398 [00:00<00:01, 192.21it/s, Materializing param=model.layers.1.post_attention_layernorm.weight]Loading weights:   4%|▍         | 17/398 [00:00<00:01, 191.99it/s, Materializing param=model.layers.1.post_attention_layernorm.weight]Loading weights:   5%|▍         | 18/398 [00:00<00:01, 202.97it/s, Materializing param=model.layers.1.self_attn.k_norm.weight]        Loading weights:   5%|▍         | 18/398 [00:00<00:01, 202.82it/s, Materializing param=model.layers.1.self_attn.k_norm.weight]Loading weights:   5%|▍         | 19/398 [00:00<00:01, 213.78it/s, Materializing param=model.layers.1.self_attn.k_proj.weight]Loading weights:   5%|▍         | 19/398 [00:00<00:01, 213.61it/s, Materializing param=model.layers.1.self_attn.k_proj.weight]Loading weights:   5%|▌         | 20/398 [00:00<00:01, 224.05it/s, Materializing param=model.layers.1.self_attn.o_proj.weight]Loading weights:   5%|▌         | 20/398 [00:00<00:01, 223.85it/s, Materializing param=model.layers.1.self_attn.o_proj.weight]Loading weights:   5%|▌         | 21/398 [00:00<00:01, 227.79it/s, Materializing param=model.layers.1.self_attn.q_norm.weight]Loading weights:   5%|▌         | 21/398 [00:00<00:01, 227.54it/s, Materializing param=model.layers.1.self_attn.q_norm.weight]Loading weights:   6%|▌         | 22/398 [00:00<00:01, 237.36it/s, Materializing param=model.layers.1.self_attn.q_proj.weight]Loading weights:   6%|▌         | 22/398 [00:00<00:01, 237.08it/s, Materializing param=model.layers.1.self_attn.q_proj.weight]Loading weights:   6%|▌         | 23/398 [00:00<00:01, 241.14it/s, Materializing param=model.layers.1.self_attn.v_proj.weight]Loading weights:   6%|▌         | 23/398 [00:00<00:01, 240.89it/s, Materializing param=model.layers.1.self_attn.v_proj.weight]Loading weights:   6%|▌         | 24/398 [00:00<00:01, 249.34it/s, Materializing param=model.layers.2.input_layernorm.weight] Loading weights:   6%|▌         | 24/398 [00:00<00:01, 249.12it/s, Materializing param=model.layers.2.input_layernorm.weight]Loading weights:   6%|▋         | 25/398 [00:00<00:01, 258.71it/s, Materializing param=model.layers.2.mlp.down_proj.weight]  Loading weights:   6%|▋         | 25/398 [00:00<00:01, 258.50it/s, Materializing param=model.layers.2.mlp.down_proj.weight]Loading weights:   7%|▋         | 26/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.mlp.down_proj.weight]Loading weights:   7%|▋         | 26/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.mlp.gate_proj.weight]Loading weights:   7%|▋         | 26/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.mlp.gate_proj.weight]Loading weights:   7%|▋         | 27/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.mlp.up_proj.weight]  Loading weights:   7%|▋         | 27/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.mlp.up_proj.weight]Loading weights:   7%|▋         | 28/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.post_attention_layernorm.weight]Loading weights:   7%|▋         | 28/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.post_attention_layernorm.weight]Loading weights:   7%|▋         | 29/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.k_norm.weight]        Loading weights:   7%|▋         | 29/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.k_norm.weight]Loading weights:   8%|▊         | 30/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.k_proj.weight]Loading weights:   8%|▊         | 30/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.k_proj.weight]Loading weights:   8%|▊         | 31/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.o_proj.weight]Loading weights:   8%|▊         | 31/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.o_proj.weight]Loading weights:   8%|▊         | 32/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.q_norm.weight]Loading weights:   8%|▊         | 32/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.q_norm.weight]Loading weights:   8%|▊         | 33/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.q_proj.weight]Loading weights:   8%|▊         | 33/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.q_proj.weight]Loading weights:   9%|▊         | 34/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.v_proj.weight]Loading weights:   9%|▊         | 34/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.2.self_attn.v_proj.weight]Loading weights:   9%|▉         | 35/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.input_layernorm.weight] Loading weights:   9%|▉         | 35/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.input_layernorm.weight]Loading weights:   9%|▉         | 36/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.mlp.down_proj.weight]  Loading weights:   9%|▉         | 36/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.mlp.down_proj.weight]Loading weights:   9%|▉         | 37/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.mlp.gate_proj.weight]Loading weights:   9%|▉         | 37/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.mlp.gate_proj.weight]Loading weights:  10%|▉         | 38/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.mlp.up_proj.weight]  Loading weights:  10%|▉         | 38/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.mlp.up_proj.weight]Loading weights:  10%|▉         | 39/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.post_attention_layernorm.weight]Loading weights:  10%|▉         | 39/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.post_attention_layernorm.weight]Loading weights:  10%|█         | 40/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.k_norm.weight]        Loading weights:  10%|█         | 40/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.k_norm.weight]Loading weights:  10%|█         | 41/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.k_proj.weight]Loading weights:  10%|█         | 41/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.k_proj.weight]Loading weights:  11%|█         | 42/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.o_proj.weight]Loading weights:  11%|█         | 42/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.o_proj.weight]Loading weights:  11%|█         | 43/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.q_norm.weight]Loading weights:  11%|█         | 43/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.q_norm.weight]Loading weights:  11%|█         | 44/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.q_proj.weight]Loading weights:  11%|█         | 44/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.q_proj.weight]Loading weights:  11%|█▏        | 45/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.v_proj.weight]Loading weights:  11%|█▏        | 45/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.3.self_attn.v_proj.weight]Loading weights:  12%|█▏        | 46/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.input_layernorm.weight] Loading weights:  12%|█▏        | 46/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.input_layernorm.weight]Loading weights:  12%|█▏        | 47/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.mlp.down_proj.weight]  Loading weights:  12%|█▏        | 47/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.mlp.down_proj.weight]Loading weights:  12%|█▏        | 48/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.mlp.gate_proj.weight]Loading weights:  12%|█▏        | 48/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.mlp.gate_proj.weight]Loading weights:  12%|█▏        | 49/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.mlp.up_proj.weight]  Loading weights:  12%|█▏        | 49/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.mlp.up_proj.weight]Loading weights:  13%|█▎        | 50/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.post_attention_layernorm.weight]Loading weights:  13%|█▎        | 50/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.post_attention_layernorm.weight]Loading weights:  13%|█▎        | 51/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.k_norm.weight]        Loading weights:  13%|█▎        | 51/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.k_norm.weight]Loading weights:  13%|█▎        | 52/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.k_proj.weight]Loading weights:  13%|█▎        | 52/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.k_proj.weight]Loading weights:  13%|█▎        | 53/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.o_proj.weight]Loading weights:  13%|█▎        | 53/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.o_proj.weight]Loading weights:  14%|█▎        | 54/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.q_norm.weight]Loading weights:  14%|█▎        | 54/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.q_norm.weight]Loading weights:  14%|█▍        | 55/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.q_proj.weight]Loading weights:  14%|█▍        | 55/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.q_proj.weight]Loading weights:  14%|█▍        | 56/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.v_proj.weight]Loading weights:  14%|█▍        | 56/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.4.self_attn.v_proj.weight]Loading weights:  14%|█▍        | 57/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.5.input_layernorm.weight] Loading weights:  14%|█▍        | 57/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.5.input_layernorm.weight]Loading weights:  15%|█▍        | 58/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.5.mlp.down_proj.weight]  Loading weights:  15%|█▍        | 58/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.5.mlp.down_proj.weight]Loading weights:  15%|█▍        | 59/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.5.mlp.gate_proj.weight]Loading weights:  15%|█▍        | 59/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.5.mlp.gate_proj.weight]Loading weights:  15%|█▌        | 60/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.5.mlp.up_proj.weight]  Loading weights:  15%|█▌        | 60/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.5.mlp.up_proj.weight]Loading weights:  15%|█▌        | 61/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.5.post_attention_layernorm.weight]Loading weights:  15%|█▌        | 61/398 [00:00<00:01, 252.54it/s, Materializing param=model.layers.5.post_attention_layernorm.weight]Loading weights:  16%|█▌        | 62/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.post_attention_layernorm.weight]Loading weights:  16%|█▌        | 62/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.k_norm.weight]        Loading weights:  16%|█▌        | 62/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.k_norm.weight]Loading weights:  16%|█▌        | 63/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.k_proj.weight]Loading weights:  16%|█▌        | 63/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.k_proj.weight]Loading weights:  16%|█▌        | 64/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.o_proj.weight]Loading weights:  16%|█▌        | 64/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.o_proj.weight]Loading weights:  16%|█▋        | 65/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.q_norm.weight]Loading weights:  16%|█▋        | 65/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.q_norm.weight]Loading weights:  17%|█▋        | 66/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.q_proj.weight]Loading weights:  17%|█▋        | 66/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.q_proj.weight]Loading weights:  17%|█▋        | 67/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.v_proj.weight]Loading weights:  17%|█▋        | 67/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.5.self_attn.v_proj.weight]Loading weights:  17%|█▋        | 68/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.input_layernorm.weight] Loading weights:  17%|█▋        | 68/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.input_layernorm.weight]Loading weights:  17%|█▋        | 69/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.mlp.down_proj.weight]  Loading weights:  17%|█▋        | 69/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.mlp.down_proj.weight]Loading weights:  18%|█▊        | 70/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.mlp.gate_proj.weight]Loading weights:  18%|█▊        | 70/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.mlp.gate_proj.weight]Loading weights:  18%|█▊        | 71/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.mlp.up_proj.weight]  Loading weights:  18%|█▊        | 71/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.mlp.up_proj.weight]Loading weights:  18%|█▊        | 72/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.post_attention_layernorm.weight]Loading weights:  18%|█▊        | 72/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.post_attention_layernorm.weight]Loading weights:  18%|█▊        | 73/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.k_norm.weight]        Loading weights:  18%|█▊        | 73/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.k_norm.weight]Loading weights:  19%|█▊        | 74/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.k_proj.weight]Loading weights:  19%|█▊        | 74/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.k_proj.weight]Loading weights:  19%|█▉        | 75/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.o_proj.weight]Loading weights:  19%|█▉        | 75/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.o_proj.weight]Loading weights:  19%|█▉        | 76/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.q_norm.weight]Loading weights:  19%|█▉        | 76/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.q_norm.weight]Loading weights:  19%|█▉        | 77/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.q_proj.weight]Loading weights:  19%|█▉        | 77/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.q_proj.weight]Loading weights:  20%|█▉        | 78/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.v_proj.weight]Loading weights:  20%|█▉        | 78/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.6.self_attn.v_proj.weight]Loading weights:  20%|█▉        | 79/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.7.input_layernorm.weight] Loading weights:  20%|█▉        | 79/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.7.input_layernorm.weight]Loading weights:  20%|██        | 80/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.7.mlp.down_proj.weight]  Loading weights:  20%|██        | 80/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.7.mlp.down_proj.weight]Loading weights:  20%|██        | 81/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.7.mlp.gate_proj.weight]Loading weights:  20%|██        | 81/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.7.mlp.gate_proj.weight]Loading weights:  21%|██        | 82/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.7.mlp.up_proj.weight]  Loading weights:  21%|██        | 82/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.7.mlp.up_proj.weight]Loading weights:  21%|██        | 83/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.7.post_attention_layernorm.weight]Loading weights:  21%|██        | 83/398 [00:00<00:01, 314.15it/s, Materializing param=model.layers.7.post_attention_layernorm.weight]Loading weights:  21%|██        | 84/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.k_norm.weight]        Loading weights:  21%|██        | 84/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.k_norm.weight]Loading weights:  21%|██▏       | 85/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.k_proj.weight]Loading weights:  21%|██▏       | 85/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.k_proj.weight]Loading weights:  22%|██▏       | 86/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.o_proj.weight]Loading weights:  22%|██▏       | 86/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.o_proj.weight]Loading weights:  22%|██▏       | 87/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.q_norm.weight]Loading weights:  22%|██▏       | 87/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.q_norm.weight]Loading weights:  22%|██▏       | 88/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.q_proj.weight]Loading weights:  22%|██▏       | 88/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.q_proj.weight]Loading weights:  22%|██▏       | 89/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.v_proj.weight]Loading weights:  22%|██▏       | 89/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.7.self_attn.v_proj.weight]Loading weights:  23%|██▎       | 90/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.input_layernorm.weight] Loading weights:  23%|██▎       | 90/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.input_layernorm.weight]Loading weights:  23%|██▎       | 91/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.mlp.down_proj.weight]  Loading weights:  23%|██▎       | 91/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.mlp.down_proj.weight]Loading weights:  23%|██▎       | 92/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.mlp.gate_proj.weight]Loading weights:  23%|██▎       | 92/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.mlp.gate_proj.weight]Loading weights:  23%|██▎       | 93/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.mlp.up_proj.weight]  Loading weights:  23%|██▎       | 93/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.mlp.up_proj.weight]Loading weights:  24%|██▎       | 94/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.post_attention_layernorm.weight]Loading weights:  24%|██▎       | 94/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.post_attention_layernorm.weight]Loading weights:  24%|██▍       | 95/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.k_norm.weight]        Loading weights:  24%|██▍       | 95/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.k_norm.weight]Loading weights:  24%|██▍       | 96/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.k_proj.weight]Loading weights:  24%|██▍       | 96/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.k_proj.weight]Loading weights:  24%|██▍       | 97/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.o_proj.weight]Loading weights:  24%|██▍       | 97/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.o_proj.weight]Loading weights:  25%|██▍       | 98/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.q_norm.weight]Loading weights:  25%|██▍       | 98/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.q_norm.weight]Loading weights:  25%|██▍       | 99/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.q_proj.weight]Loading weights:  25%|██▍       | 99/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.q_proj.weight]Loading weights:  25%|██▌       | 100/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.v_proj.weight]Loading weights:  25%|██▌       | 100/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.8.self_attn.v_proj.weight]Loading weights:  25%|██▌       | 101/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.9.input_layernorm.weight] Loading weights:  25%|██▌       | 101/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.9.input_layernorm.weight]Loading weights:  26%|██▌       | 102/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.9.mlp.down_proj.weight]  Loading weights:  26%|██▌       | 102/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.9.mlp.down_proj.weight]Loading weights:  26%|██▌       | 103/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.9.mlp.gate_proj.weight]Loading weights:  26%|██▌       | 103/398 [00:00<00:00, 314.15it/s, Materializing param=model.layers.9.mlp.gate_proj.weight]Loading weights:  26%|██▌       | 104/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.mlp.gate_proj.weight]Loading weights:  26%|██▌       | 104/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.mlp.up_proj.weight]  Loading weights:  26%|██▌       | 104/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.mlp.up_proj.weight]Loading weights:  26%|██▋       | 105/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.post_attention_layernorm.weight]Loading weights:  26%|██▋       | 105/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.post_attention_layernorm.weight]Loading weights:  27%|██▋       | 106/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.k_norm.weight]        Loading weights:  27%|██▋       | 106/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.k_norm.weight]Loading weights:  27%|██▋       | 107/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.k_proj.weight]Loading weights:  27%|██▋       | 107/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.k_proj.weight]Loading weights:  27%|██▋       | 108/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.o_proj.weight]Loading weights:  27%|██▋       | 108/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.o_proj.weight]Loading weights:  27%|██▋       | 109/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.q_norm.weight]Loading weights:  27%|██▋       | 109/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.q_norm.weight]Loading weights:  28%|██▊       | 110/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.q_proj.weight]Loading weights:  28%|██▊       | 110/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.q_proj.weight]Loading weights:  28%|██▊       | 111/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.v_proj.weight]Loading weights:  28%|██▊       | 111/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.9.self_attn.v_proj.weight]Loading weights:  28%|██▊       | 112/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.input_layernorm.weight]Loading weights:  28%|██▊       | 112/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.input_layernorm.weight]Loading weights:  28%|██▊       | 113/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.mlp.down_proj.weight]  Loading weights:  28%|██▊       | 113/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.mlp.down_proj.weight]Loading weights:  29%|██▊       | 114/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.mlp.gate_proj.weight]Loading weights:  29%|██▊       | 114/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.mlp.gate_proj.weight]Loading weights:  29%|██▉       | 115/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.mlp.up_proj.weight]  Loading weights:  29%|██▉       | 115/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.mlp.up_proj.weight]Loading weights:  29%|██▉       | 116/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.post_attention_layernorm.weight]Loading weights:  29%|██▉       | 116/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.post_attention_layernorm.weight]Loading weights:  29%|██▉       | 117/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.k_norm.weight]        Loading weights:  29%|██▉       | 117/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.k_norm.weight]Loading weights:  30%|██▉       | 118/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.k_proj.weight]Loading weights:  30%|██▉       | 118/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.k_proj.weight]Loading weights:  30%|██▉       | 119/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.o_proj.weight]Loading weights:  30%|██▉       | 119/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.o_proj.weight]Loading weights:  30%|███       | 120/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.q_norm.weight]Loading weights:  30%|███       | 120/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.q_norm.weight]Loading weights:  30%|███       | 121/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.q_proj.weight]Loading weights:  30%|███       | 121/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.q_proj.weight]Loading weights:  31%|███       | 122/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.v_proj.weight]Loading weights:  31%|███       | 122/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.10.self_attn.v_proj.weight]Loading weights:  31%|███       | 123/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.input_layernorm.weight] Loading weights:  31%|███       | 123/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.input_layernorm.weight]Loading weights:  31%|███       | 124/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.mlp.down_proj.weight]  Loading weights:  31%|███       | 124/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.mlp.down_proj.weight]Loading weights:  31%|███▏      | 125/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.mlp.gate_proj.weight]Loading weights:  31%|███▏      | 125/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.mlp.gate_proj.weight]Loading weights:  32%|███▏      | 126/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.mlp.up_proj.weight]  Loading weights:  32%|███▏      | 126/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.mlp.up_proj.weight]Loading weights:  32%|███▏      | 127/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.post_attention_layernorm.weight]Loading weights:  32%|███▏      | 127/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.post_attention_layernorm.weight]Loading weights:  32%|███▏      | 128/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.k_norm.weight]        Loading weights:  32%|███▏      | 128/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.k_norm.weight]Loading weights:  32%|███▏      | 129/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.k_proj.weight]Loading weights:  32%|███▏      | 129/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.k_proj.weight]Loading weights:  33%|███▎      | 130/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.o_proj.weight]Loading weights:  33%|███▎      | 130/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.o_proj.weight]Loading weights:  33%|███▎      | 131/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.q_norm.weight]Loading weights:  33%|███▎      | 131/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.q_norm.weight]Loading weights:  33%|███▎      | 132/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.q_proj.weight]Loading weights:  33%|███▎      | 132/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.q_proj.weight]Loading weights:  33%|███▎      | 133/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.v_proj.weight]Loading weights:  33%|███▎      | 133/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.11.self_attn.v_proj.weight]Loading weights:  34%|███▎      | 134/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.input_layernorm.weight] Loading weights:  34%|███▎      | 134/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.input_layernorm.weight]Loading weights:  34%|███▍      | 135/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.mlp.down_proj.weight]  Loading weights:  34%|███▍      | 135/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.mlp.down_proj.weight]Loading weights:  34%|███▍      | 136/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.mlp.gate_proj.weight]Loading weights:  34%|███▍      | 136/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.mlp.gate_proj.weight]Loading weights:  34%|███▍      | 137/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.mlp.up_proj.weight]  Loading weights:  34%|███▍      | 137/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.mlp.up_proj.weight]Loading weights:  35%|███▍      | 138/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.post_attention_layernorm.weight]Loading weights:  35%|███▍      | 138/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.post_attention_layernorm.weight]Loading weights:  35%|███▍      | 139/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.self_attn.k_norm.weight]        Loading weights:  35%|███▍      | 139/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.self_attn.k_norm.weight]Loading weights:  35%|███▌      | 140/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.self_attn.k_proj.weight]Loading weights:  35%|███▌      | 140/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.self_attn.k_proj.weight]Loading weights:  35%|███▌      | 141/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.self_attn.o_proj.weight]Loading weights:  35%|███▌      | 141/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.self_attn.o_proj.weight]Loading weights:  36%|███▌      | 142/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.self_attn.q_norm.weight]Loading weights:  36%|███▌      | 142/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.self_attn.q_norm.weight]Loading weights:  36%|███▌      | 143/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.self_attn.q_proj.weight]Loading weights:  36%|███▌      | 143/398 [00:00<00:00, 354.02it/s, Materializing param=model.layers.12.self_attn.q_proj.weight]Loading weights:  36%|███▌      | 144/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.12.self_attn.q_proj.weight]Loading weights:  36%|███▌      | 144/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.12.self_attn.v_proj.weight]Loading weights:  36%|███▌      | 144/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.12.self_attn.v_proj.weight]Loading weights:  36%|███▋      | 145/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.input_layernorm.weight] Loading weights:  36%|███▋      | 145/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.input_layernorm.weight]Loading weights:  37%|███▋      | 146/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.mlp.down_proj.weight]  Loading weights:  37%|███▋      | 146/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.mlp.down_proj.weight]Loading weights:  37%|███▋      | 147/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.mlp.gate_proj.weight]Loading weights:  37%|███▋      | 147/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.mlp.gate_proj.weight]Loading weights:  37%|███▋      | 148/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.mlp.up_proj.weight]  Loading weights:  37%|███▋      | 148/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.mlp.up_proj.weight]Loading weights:  37%|███▋      | 149/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.post_attention_layernorm.weight]Loading weights:  37%|███▋      | 149/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.post_attention_layernorm.weight]Loading weights:  38%|███▊      | 150/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.k_norm.weight]        Loading weights:  38%|███▊      | 150/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.k_norm.weight]Loading weights:  38%|███▊      | 151/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.k_proj.weight]Loading weights:  38%|███▊      | 151/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.k_proj.weight]Loading weights:  38%|███▊      | 152/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.o_proj.weight]Loading weights:  38%|███▊      | 152/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.o_proj.weight]Loading weights:  38%|███▊      | 153/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.q_norm.weight]Loading weights:  38%|███▊      | 153/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.q_norm.weight]Loading weights:  39%|███▊      | 154/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.q_proj.weight]Loading weights:  39%|███▊      | 154/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.q_proj.weight]Loading weights:  39%|███▉      | 155/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.v_proj.weight]Loading weights:  39%|███▉      | 155/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.13.self_attn.v_proj.weight]Loading weights:  39%|███▉      | 156/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.input_layernorm.weight] Loading weights:  39%|███▉      | 156/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.input_layernorm.weight]Loading weights:  39%|███▉      | 157/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.mlp.down_proj.weight]  Loading weights:  39%|███▉      | 157/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.mlp.down_proj.weight]Loading weights:  40%|███▉      | 158/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.mlp.gate_proj.weight]Loading weights:  40%|███▉      | 158/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.mlp.gate_proj.weight]Loading weights:  40%|███▉      | 159/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.mlp.up_proj.weight]  Loading weights:  40%|███▉      | 159/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.mlp.up_proj.weight]Loading weights:  40%|████      | 160/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.post_attention_layernorm.weight]Loading weights:  40%|████      | 160/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.post_attention_layernorm.weight]Loading weights:  40%|████      | 161/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.k_norm.weight]        Loading weights:  40%|████      | 161/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.k_norm.weight]Loading weights:  41%|████      | 162/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.k_proj.weight]Loading weights:  41%|████      | 162/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.k_proj.weight]Loading weights:  41%|████      | 163/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.o_proj.weight]Loading weights:  41%|████      | 163/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.o_proj.weight]Loading weights:  41%|████      | 164/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.q_norm.weight]Loading weights:  41%|████      | 164/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.q_norm.weight]Loading weights:  41%|████▏     | 165/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.q_proj.weight]Loading weights:  41%|████▏     | 165/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.q_proj.weight]Loading weights:  42%|████▏     | 166/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.v_proj.weight]Loading weights:  42%|████▏     | 166/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.14.self_attn.v_proj.weight]Loading weights:  42%|████▏     | 167/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.input_layernorm.weight] Loading weights:  42%|████▏     | 167/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.input_layernorm.weight]Loading weights:  42%|████▏     | 168/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.mlp.down_proj.weight]  Loading weights:  42%|████▏     | 168/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.mlp.down_proj.weight]Loading weights:  42%|████▏     | 169/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.mlp.gate_proj.weight]Loading weights:  42%|████▏     | 169/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.mlp.gate_proj.weight]Loading weights:  43%|████▎     | 170/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.mlp.up_proj.weight]  Loading weights:  43%|████▎     | 170/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.mlp.up_proj.weight]Loading weights:  43%|████▎     | 171/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.post_attention_layernorm.weight]Loading weights:  43%|████▎     | 171/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.post_attention_layernorm.weight]Loading weights:  43%|████▎     | 172/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.k_norm.weight]        Loading weights:  43%|████▎     | 172/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.k_norm.weight]Loading weights:  43%|████▎     | 173/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.k_proj.weight]Loading weights:  43%|████▎     | 173/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.k_proj.weight]Loading weights:  44%|████▎     | 174/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.o_proj.weight]Loading weights:  44%|████▎     | 174/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.o_proj.weight]Loading weights:  44%|████▍     | 175/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.q_norm.weight]Loading weights:  44%|████▍     | 175/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.q_norm.weight]Loading weights:  44%|████▍     | 176/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.q_proj.weight]Loading weights:  44%|████▍     | 176/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.q_proj.weight]Loading weights:  44%|████▍     | 177/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.v_proj.weight]Loading weights:  44%|████▍     | 177/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.15.self_attn.v_proj.weight]Loading weights:  45%|████▍     | 178/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.16.input_layernorm.weight] Loading weights:  45%|████▍     | 178/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.16.input_layernorm.weight]Loading weights:  45%|████▍     | 179/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.16.mlp.down_proj.weight]  Loading weights:  45%|████▍     | 179/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.16.mlp.down_proj.weight]Loading weights:  45%|████▌     | 180/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.16.mlp.gate_proj.weight]Loading weights:  45%|████▌     | 180/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.16.mlp.gate_proj.weight]Loading weights:  45%|████▌     | 181/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.16.mlp.up_proj.weight]  Loading weights:  45%|████▌     | 181/398 [00:00<00:00, 371.69it/s, Materializing param=model.layers.16.mlp.up_proj.weight]Loading weights:  46%|████▌     | 182/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.mlp.up_proj.weight]Loading weights:  46%|████▌     | 182/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.post_attention_layernorm.weight]Loading weights:  46%|████▌     | 182/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.post_attention_layernorm.weight]Loading weights:  46%|████▌     | 183/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.k_norm.weight]        Loading weights:  46%|████▌     | 183/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.k_norm.weight]Loading weights:  46%|████▌     | 184/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.k_proj.weight]Loading weights:  46%|████▌     | 184/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.k_proj.weight]Loading weights:  46%|████▋     | 185/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.o_proj.weight]Loading weights:  46%|████▋     | 185/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.o_proj.weight]Loading weights:  47%|████▋     | 186/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.q_norm.weight]Loading weights:  47%|████▋     | 186/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.q_norm.weight]Loading weights:  47%|████▋     | 187/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.q_proj.weight]Loading weights:  47%|████▋     | 187/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.q_proj.weight]Loading weights:  47%|████▋     | 188/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.v_proj.weight]Loading weights:  47%|████▋     | 188/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.16.self_attn.v_proj.weight]Loading weights:  47%|████▋     | 189/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.input_layernorm.weight] Loading weights:  47%|████▋     | 189/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.input_layernorm.weight]Loading weights:  48%|████▊     | 190/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.mlp.down_proj.weight]  Loading weights:  48%|████▊     | 190/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.mlp.down_proj.weight]Loading weights:  48%|████▊     | 191/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.mlp.gate_proj.weight]Loading weights:  48%|████▊     | 191/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.mlp.gate_proj.weight]Loading weights:  48%|████▊     | 192/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.mlp.up_proj.weight]  Loading weights:  48%|████▊     | 192/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.mlp.up_proj.weight]Loading weights:  48%|████▊     | 193/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.post_attention_layernorm.weight]Loading weights:  48%|████▊     | 193/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.post_attention_layernorm.weight]Loading weights:  49%|████▊     | 194/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.k_norm.weight]        Loading weights:  49%|████▊     | 194/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.k_norm.weight]Loading weights:  49%|████▉     | 195/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.k_proj.weight]Loading weights:  49%|████▉     | 195/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.k_proj.weight]Loading weights:  49%|████▉     | 196/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.o_proj.weight]Loading weights:  49%|████▉     | 196/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.o_proj.weight]Loading weights:  49%|████▉     | 197/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.q_norm.weight]Loading weights:  49%|████▉     | 197/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.q_norm.weight]Loading weights:  50%|████▉     | 198/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.q_proj.weight]Loading weights:  50%|████▉     | 198/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.q_proj.weight]Loading weights:  50%|█████     | 199/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.v_proj.weight]Loading weights:  50%|█████     | 199/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.17.self_attn.v_proj.weight]Loading weights:  50%|█████     | 200/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.input_layernorm.weight] Loading weights:  50%|█████     | 200/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.input_layernorm.weight]Loading weights:  51%|█████     | 201/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.mlp.down_proj.weight]  Loading weights:  51%|█████     | 201/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.mlp.down_proj.weight]Loading weights:  51%|█████     | 202/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.mlp.gate_proj.weight]Loading weights:  51%|█████     | 202/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.mlp.gate_proj.weight]Loading weights:  51%|█████     | 203/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.mlp.up_proj.weight]  Loading weights:  51%|█████     | 203/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.mlp.up_proj.weight]Loading weights:  51%|█████▏    | 204/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.post_attention_layernorm.weight]Loading weights:  51%|█████▏    | 204/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.post_attention_layernorm.weight]Loading weights:  52%|█████▏    | 205/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.k_norm.weight]        Loading weights:  52%|█████▏    | 205/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.k_norm.weight]Loading weights:  52%|█████▏    | 206/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.k_proj.weight]Loading weights:  52%|█████▏    | 206/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.k_proj.weight]Loading weights:  52%|█████▏    | 207/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.o_proj.weight]Loading weights:  52%|█████▏    | 207/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.o_proj.weight]Loading weights:  52%|█████▏    | 208/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.q_norm.weight]Loading weights:  52%|█████▏    | 208/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.q_norm.weight]Loading weights:  53%|█████▎    | 209/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.q_proj.weight]Loading weights:  53%|█████▎    | 209/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.q_proj.weight]Loading weights:  53%|█████▎    | 210/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.v_proj.weight]Loading weights:  53%|█████▎    | 210/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.18.self_attn.v_proj.weight]Loading weights:  53%|█████▎    | 211/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.input_layernorm.weight] Loading weights:  53%|█████▎    | 211/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.input_layernorm.weight]Loading weights:  53%|█████▎    | 212/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.mlp.down_proj.weight]  Loading weights:  53%|█████▎    | 212/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.mlp.down_proj.weight]Loading weights:  54%|█████▎    | 213/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.mlp.gate_proj.weight]Loading weights:  54%|█████▎    | 213/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.mlp.gate_proj.weight]Loading weights:  54%|█████▍    | 214/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.mlp.up_proj.weight]  Loading weights:  54%|█████▍    | 214/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.mlp.up_proj.weight]Loading weights:  54%|█████▍    | 215/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.post_attention_layernorm.weight]Loading weights:  54%|█████▍    | 215/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.post_attention_layernorm.weight]Loading weights:  54%|█████▍    | 216/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.k_norm.weight]        Loading weights:  54%|█████▍    | 216/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.k_norm.weight]Loading weights:  55%|█████▍    | 217/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.k_proj.weight]Loading weights:  55%|█████▍    | 217/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.k_proj.weight]Loading weights:  55%|█████▍    | 218/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.o_proj.weight]Loading weights:  55%|█████▍    | 218/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.o_proj.weight]Loading weights:  55%|█████▌    | 219/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.q_norm.weight]Loading weights:  55%|█████▌    | 219/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.q_norm.weight]Loading weights:  55%|█████▌    | 220/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.q_proj.weight]Loading weights:  55%|█████▌    | 220/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.q_proj.weight]Loading weights:  56%|█████▌    | 221/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.v_proj.weight]Loading weights:  56%|█████▌    | 221/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.19.self_attn.v_proj.weight]Loading weights:  56%|█████▌    | 222/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.20.input_layernorm.weight] Loading weights:  56%|█████▌    | 222/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.20.input_layernorm.weight]Loading weights:  56%|█████▌    | 223/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.20.mlp.down_proj.weight]  Loading weights:  56%|█████▌    | 223/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.20.mlp.down_proj.weight]Loading weights:  56%|█████▋    | 224/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.20.mlp.gate_proj.weight]Loading weights:  56%|█████▋    | 224/398 [00:00<00:00, 369.76it/s, Materializing param=model.layers.20.mlp.gate_proj.weight]Loading weights:  57%|█████▋    | 225/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.mlp.gate_proj.weight]Loading weights:  57%|█████▋    | 225/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.mlp.up_proj.weight]  Loading weights:  57%|█████▋    | 225/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.mlp.up_proj.weight]Loading weights:  57%|█████▋    | 226/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.post_attention_layernorm.weight]Loading weights:  57%|█████▋    | 226/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.post_attention_layernorm.weight]Loading weights:  57%|█████▋    | 227/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.k_norm.weight]        Loading weights:  57%|█████▋    | 227/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.k_norm.weight]Loading weights:  57%|█████▋    | 228/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.k_proj.weight]Loading weights:  57%|█████▋    | 228/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.k_proj.weight]Loading weights:  58%|█████▊    | 229/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.o_proj.weight]Loading weights:  58%|█████▊    | 229/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.o_proj.weight]Loading weights:  58%|█████▊    | 230/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.q_norm.weight]Loading weights:  58%|█████▊    | 230/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.q_norm.weight]Loading weights:  58%|█████▊    | 231/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.q_proj.weight]Loading weights:  58%|█████▊    | 231/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.q_proj.weight]Loading weights:  58%|█████▊    | 232/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.v_proj.weight]Loading weights:  58%|█████▊    | 232/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.20.self_attn.v_proj.weight]Loading weights:  59%|█████▊    | 233/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.input_layernorm.weight] Loading weights:  59%|█████▊    | 233/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.input_layernorm.weight]Loading weights:  59%|█████▉    | 234/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.mlp.down_proj.weight]  Loading weights:  59%|█████▉    | 234/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.mlp.down_proj.weight]Loading weights:  59%|█████▉    | 235/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.mlp.gate_proj.weight]Loading weights:  59%|█████▉    | 235/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.mlp.gate_proj.weight]Loading weights:  59%|█████▉    | 236/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.mlp.up_proj.weight]  Loading weights:  59%|█████▉    | 236/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.mlp.up_proj.weight]Loading weights:  60%|█████▉    | 237/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.post_attention_layernorm.weight]Loading weights:  60%|█████▉    | 237/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.post_attention_layernorm.weight]Loading weights:  60%|█████▉    | 238/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.k_norm.weight]        Loading weights:  60%|█████▉    | 238/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.k_norm.weight]Loading weights:  60%|██████    | 239/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.k_proj.weight]Loading weights:  60%|██████    | 239/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.k_proj.weight]Loading weights:  60%|██████    | 240/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.o_proj.weight]Loading weights:  60%|██████    | 240/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.o_proj.weight]Loading weights:  61%|██████    | 241/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.q_norm.weight]Loading weights:  61%|██████    | 241/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.q_norm.weight]Loading weights:  61%|██████    | 242/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.q_proj.weight]Loading weights:  61%|██████    | 242/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.q_proj.weight]Loading weights:  61%|██████    | 243/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.v_proj.weight]Loading weights:  61%|██████    | 243/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.21.self_attn.v_proj.weight]Loading weights:  61%|██████▏   | 244/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.input_layernorm.weight] Loading weights:  61%|██████▏   | 244/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.input_layernorm.weight]Loading weights:  62%|██████▏   | 245/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.mlp.down_proj.weight]  Loading weights:  62%|██████▏   | 245/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.mlp.down_proj.weight]Loading weights:  62%|██████▏   | 246/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.mlp.gate_proj.weight]Loading weights:  62%|██████▏   | 246/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.mlp.gate_proj.weight]Loading weights:  62%|██████▏   | 247/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.mlp.up_proj.weight]  Loading weights:  62%|██████▏   | 247/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.mlp.up_proj.weight]Loading weights:  62%|██████▏   | 248/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.post_attention_layernorm.weight]Loading weights:  62%|██████▏   | 248/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.post_attention_layernorm.weight]Loading weights:  63%|██████▎   | 249/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.k_norm.weight]        Loading weights:  63%|██████▎   | 249/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.k_norm.weight]Loading weights:  63%|██████▎   | 250/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.k_proj.weight]Loading weights:  63%|██████▎   | 250/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.k_proj.weight]Loading weights:  63%|██████▎   | 251/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.o_proj.weight]Loading weights:  63%|██████▎   | 251/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.o_proj.weight]Loading weights:  63%|██████▎   | 252/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.q_norm.weight]Loading weights:  63%|██████▎   | 252/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.q_norm.weight]Loading weights:  64%|██████▎   | 253/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.q_proj.weight]Loading weights:  64%|██████▎   | 253/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.q_proj.weight]Loading weights:  64%|██████▍   | 254/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.v_proj.weight]Loading weights:  64%|██████▍   | 254/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.22.self_attn.v_proj.weight]Loading weights:  64%|██████▍   | 255/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.input_layernorm.weight] Loading weights:  64%|██████▍   | 255/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.input_layernorm.weight]Loading weights:  64%|██████▍   | 256/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.mlp.down_proj.weight]  Loading weights:  64%|██████▍   | 256/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.mlp.down_proj.weight]Loading weights:  65%|██████▍   | 257/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.mlp.gate_proj.weight]Loading weights:  65%|██████▍   | 257/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.mlp.gate_proj.weight]Loading weights:  65%|██████▍   | 258/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.mlp.up_proj.weight]  Loading weights:  65%|██████▍   | 258/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.mlp.up_proj.weight]Loading weights:  65%|██████▌   | 259/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.post_attention_layernorm.weight]Loading weights:  65%|██████▌   | 259/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.post_attention_layernorm.weight]Loading weights:  65%|██████▌   | 260/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.k_norm.weight]        Loading weights:  65%|██████▌   | 260/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.k_norm.weight]Loading weights:  66%|██████▌   | 261/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.k_proj.weight]Loading weights:  66%|██████▌   | 261/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.k_proj.weight]Loading weights:  66%|██████▌   | 262/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.o_proj.weight]Loading weights:  66%|██████▌   | 262/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.o_proj.weight]Loading weights:  66%|██████▌   | 263/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.q_norm.weight]Loading weights:  66%|██████▌   | 263/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.q_norm.weight]Loading weights:  66%|██████▋   | 264/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.q_proj.weight]Loading weights:  66%|██████▋   | 264/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.q_proj.weight]Loading weights:  67%|██████▋   | 265/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.v_proj.weight]Loading weights:  67%|██████▋   | 265/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.23.self_attn.v_proj.weight]Loading weights:  67%|██████▋   | 266/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.24.input_layernorm.weight] Loading weights:  67%|██████▋   | 266/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.24.input_layernorm.weight]Loading weights:  67%|██████▋   | 267/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.24.mlp.down_proj.weight]  Loading weights:  67%|██████▋   | 267/398 [00:00<00:00, 382.81it/s, Materializing param=model.layers.24.mlp.down_proj.weight]Loading weights:  67%|██████▋   | 268/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.mlp.down_proj.weight]Loading weights:  67%|██████▋   | 268/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.mlp.gate_proj.weight]Loading weights:  67%|██████▋   | 268/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.mlp.gate_proj.weight]Loading weights:  68%|██████▊   | 269/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.mlp.up_proj.weight]  Loading weights:  68%|██████▊   | 269/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.mlp.up_proj.weight]Loading weights:  68%|██████▊   | 270/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.post_attention_layernorm.weight]Loading weights:  68%|██████▊   | 270/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.post_attention_layernorm.weight]Loading weights:  68%|██████▊   | 271/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.k_norm.weight]        Loading weights:  68%|██████▊   | 271/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.k_norm.weight]Loading weights:  68%|██████▊   | 272/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.k_proj.weight]Loading weights:  68%|██████▊   | 272/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.k_proj.weight]Loading weights:  69%|██████▊   | 273/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.o_proj.weight]Loading weights:  69%|██████▊   | 273/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.o_proj.weight]Loading weights:  69%|██████▉   | 274/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.q_norm.weight]Loading weights:  69%|██████▉   | 274/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.q_norm.weight]Loading weights:  69%|██████▉   | 275/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.q_proj.weight]Loading weights:  69%|██████▉   | 275/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.q_proj.weight]Loading weights:  69%|██████▉   | 276/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.v_proj.weight]Loading weights:  69%|██████▉   | 276/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.24.self_attn.v_proj.weight]Loading weights:  70%|██████▉   | 277/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.input_layernorm.weight] Loading weights:  70%|██████▉   | 277/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.input_layernorm.weight]Loading weights:  70%|██████▉   | 278/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.mlp.down_proj.weight]  Loading weights:  70%|██████▉   | 278/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.mlp.down_proj.weight]Loading weights:  70%|███████   | 279/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.mlp.gate_proj.weight]Loading weights:  70%|███████   | 279/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.mlp.gate_proj.weight]Loading weights:  70%|███████   | 280/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.mlp.up_proj.weight]  Loading weights:  70%|███████   | 280/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.mlp.up_proj.weight]Loading weights:  71%|███████   | 281/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.post_attention_layernorm.weight]Loading weights:  71%|███████   | 281/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.post_attention_layernorm.weight]Loading weights:  71%|███████   | 282/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.k_norm.weight]        Loading weights:  71%|███████   | 282/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.k_norm.weight]Loading weights:  71%|███████   | 283/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.k_proj.weight]Loading weights:  71%|███████   | 283/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.k_proj.weight]Loading weights:  71%|███████▏  | 284/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.o_proj.weight]Loading weights:  71%|███████▏  | 284/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.o_proj.weight]Loading weights:  72%|███████▏  | 285/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.q_norm.weight]Loading weights:  72%|███████▏  | 285/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.q_norm.weight]Loading weights:  72%|███████▏  | 286/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.q_proj.weight]Loading weights:  72%|███████▏  | 286/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.q_proj.weight]Loading weights:  72%|███████▏  | 287/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.v_proj.weight]Loading weights:  72%|███████▏  | 287/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.25.self_attn.v_proj.weight]Loading weights:  72%|███████▏  | 288/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.input_layernorm.weight] Loading weights:  72%|███████▏  | 288/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.input_layernorm.weight]Loading weights:  73%|███████▎  | 289/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.mlp.down_proj.weight]  Loading weights:  73%|███████▎  | 289/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.mlp.down_proj.weight]Loading weights:  73%|███████▎  | 290/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.mlp.gate_proj.weight]Loading weights:  73%|███████▎  | 290/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.mlp.gate_proj.weight]Loading weights:  73%|███████▎  | 291/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.mlp.up_proj.weight]  Loading weights:  73%|███████▎  | 291/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.mlp.up_proj.weight]Loading weights:  73%|███████▎  | 292/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.post_attention_layernorm.weight]Loading weights:  73%|███████▎  | 292/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.post_attention_layernorm.weight]Loading weights:  74%|███████▎  | 293/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.k_norm.weight]        Loading weights:  74%|███████▎  | 293/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.k_norm.weight]Loading weights:  74%|███████▍  | 294/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.k_proj.weight]Loading weights:  74%|███████▍  | 294/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.k_proj.weight]Loading weights:  74%|███████▍  | 295/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.o_proj.weight]Loading weights:  74%|███████▍  | 295/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.o_proj.weight]Loading weights:  74%|███████▍  | 296/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.q_norm.weight]Loading weights:  74%|███████▍  | 296/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.q_norm.weight]Loading weights:  75%|███████▍  | 297/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.q_proj.weight]Loading weights:  75%|███████▍  | 297/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.q_proj.weight]Loading weights:  75%|███████▍  | 298/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.v_proj.weight]Loading weights:  75%|███████▍  | 298/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.26.self_attn.v_proj.weight]Loading weights:  75%|███████▌  | 299/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.input_layernorm.weight] Loading weights:  75%|███████▌  | 299/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.input_layernorm.weight]Loading weights:  75%|███████▌  | 300/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.mlp.down_proj.weight]  Loading weights:  75%|███████▌  | 300/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.mlp.down_proj.weight]Loading weights:  76%|███████▌  | 301/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.mlp.gate_proj.weight]Loading weights:  76%|███████▌  | 301/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.mlp.gate_proj.weight]Loading weights:  76%|███████▌  | 302/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.mlp.up_proj.weight]  Loading weights:  76%|███████▌  | 302/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.mlp.up_proj.weight]Loading weights:  76%|███████▌  | 303/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.post_attention_layernorm.weight]Loading weights:  76%|███████▌  | 303/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.post_attention_layernorm.weight]Loading weights:  76%|███████▋  | 304/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.self_attn.k_norm.weight]        Loading weights:  76%|███████▋  | 304/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.self_attn.k_norm.weight]Loading weights:  77%|███████▋  | 305/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.self_attn.k_proj.weight]Loading weights:  77%|███████▋  | 305/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.self_attn.k_proj.weight]Loading weights:  77%|███████▋  | 306/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.self_attn.o_proj.weight]Loading weights:  77%|███████▋  | 306/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.self_attn.o_proj.weight]Loading weights:  77%|███████▋  | 307/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.self_attn.q_norm.weight]Loading weights:  77%|███████▋  | 307/398 [00:00<00:00, 390.61it/s, Materializing param=model.layers.27.self_attn.q_norm.weight]Loading weights:  77%|███████▋  | 308/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.27.self_attn.q_norm.weight]Loading weights:  77%|███████▋  | 308/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.27.self_attn.q_proj.weight]Loading weights:  77%|███████▋  | 308/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.27.self_attn.q_proj.weight]Loading weights:  78%|███████▊  | 309/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.27.self_attn.v_proj.weight]Loading weights:  78%|███████▊  | 309/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.27.self_attn.v_proj.weight]Loading weights:  78%|███████▊  | 310/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.input_layernorm.weight] Loading weights:  78%|███████▊  | 310/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.input_layernorm.weight]Loading weights:  78%|███████▊  | 311/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.mlp.down_proj.weight]  Loading weights:  78%|███████▊  | 311/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.mlp.down_proj.weight]Loading weights:  78%|███████▊  | 312/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.mlp.gate_proj.weight]Loading weights:  78%|███████▊  | 312/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.mlp.gate_proj.weight]Loading weights:  79%|███████▊  | 313/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.mlp.up_proj.weight]  Loading weights:  79%|███████▊  | 313/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.mlp.up_proj.weight]Loading weights:  79%|███████▉  | 314/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.post_attention_layernorm.weight]Loading weights:  79%|███████▉  | 314/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.post_attention_layernorm.weight]Loading weights:  79%|███████▉  | 315/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.k_norm.weight]        Loading weights:  79%|███████▉  | 315/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.k_norm.weight]Loading weights:  79%|███████▉  | 316/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.k_proj.weight]Loading weights:  79%|███████▉  | 316/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.k_proj.weight]Loading weights:  80%|███████▉  | 317/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.o_proj.weight]Loading weights:  80%|███████▉  | 317/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.o_proj.weight]Loading weights:  80%|███████▉  | 318/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.q_norm.weight]Loading weights:  80%|███████▉  | 318/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.q_norm.weight]Loading weights:  80%|████████  | 319/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.q_proj.weight]Loading weights:  80%|████████  | 319/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.q_proj.weight]Loading weights:  80%|████████  | 320/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.v_proj.weight]Loading weights:  80%|████████  | 320/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.28.self_attn.v_proj.weight]Loading weights:  81%|████████  | 321/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.input_layernorm.weight] Loading weights:  81%|████████  | 321/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.input_layernorm.weight]Loading weights:  81%|████████  | 322/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.mlp.down_proj.weight]  Loading weights:  81%|████████  | 322/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.mlp.down_proj.weight]Loading weights:  81%|████████  | 323/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.mlp.gate_proj.weight]Loading weights:  81%|████████  | 323/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.mlp.gate_proj.weight]Loading weights:  81%|████████▏ | 324/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.mlp.up_proj.weight]  Loading weights:  81%|████████▏ | 324/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.mlp.up_proj.weight]Loading weights:  82%|████████▏ | 325/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.post_attention_layernorm.weight]Loading weights:  82%|████████▏ | 325/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.post_attention_layernorm.weight]Loading weights:  82%|████████▏ | 326/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.k_norm.weight]        Loading weights:  82%|████████▏ | 326/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.k_norm.weight]Loading weights:  82%|████████▏ | 327/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.k_proj.weight]Loading weights:  82%|████████▏ | 327/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.k_proj.weight]Loading weights:  82%|████████▏ | 328/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.o_proj.weight]Loading weights:  82%|████████▏ | 328/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.o_proj.weight]Loading weights:  83%|████████▎ | 329/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.q_norm.weight]Loading weights:  83%|████████▎ | 329/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.q_norm.weight]Loading weights:  83%|████████▎ | 330/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.q_proj.weight]Loading weights:  83%|████████▎ | 330/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.q_proj.weight]Loading weights:  83%|████████▎ | 331/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.v_proj.weight]Loading weights:  83%|████████▎ | 331/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.29.self_attn.v_proj.weight]Loading weights:  83%|████████▎ | 332/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.input_layernorm.weight] Loading weights:  83%|████████▎ | 332/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.input_layernorm.weight]Loading weights:  84%|████████▎ | 333/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.mlp.down_proj.weight]  Loading weights:  84%|████████▎ | 333/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.mlp.down_proj.weight]Loading weights:  84%|████████▍ | 334/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.mlp.gate_proj.weight]Loading weights:  84%|████████▍ | 334/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.mlp.gate_proj.weight]Loading weights:  84%|████████▍ | 335/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.mlp.up_proj.weight]  Loading weights:  84%|████████▍ | 335/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.mlp.up_proj.weight]Loading weights:  84%|████████▍ | 336/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.post_attention_layernorm.weight]Loading weights:  84%|████████▍ | 336/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.post_attention_layernorm.weight]Loading weights:  85%|████████▍ | 337/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.k_norm.weight]        Loading weights:  85%|████████▍ | 337/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.k_norm.weight]Loading weights:  85%|████████▍ | 338/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.k_proj.weight]Loading weights:  85%|████████▍ | 338/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.k_proj.weight]Loading weights:  85%|████████▌ | 339/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.o_proj.weight]Loading weights:  85%|████████▌ | 339/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.o_proj.weight]Loading weights:  85%|████████▌ | 340/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.q_norm.weight]Loading weights:  85%|████████▌ | 340/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.q_norm.weight]Loading weights:  86%|████████▌ | 341/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.q_proj.weight]Loading weights:  86%|████████▌ | 341/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.q_proj.weight]Loading weights:  86%|████████▌ | 342/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.v_proj.weight]Loading weights:  86%|████████▌ | 342/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.30.self_attn.v_proj.weight]Loading weights:  86%|████████▌ | 343/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.31.input_layernorm.weight] Loading weights:  86%|████████▌ | 343/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.31.input_layernorm.weight]Loading weights:  86%|████████▋ | 344/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.31.mlp.down_proj.weight]  Loading weights:  86%|████████▋ | 344/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.31.mlp.down_proj.weight]Loading weights:  87%|████████▋ | 345/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.31.mlp.gate_proj.weight]Loading weights:  87%|████████▋ | 345/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.31.mlp.gate_proj.weight]Loading weights:  87%|████████▋ | 346/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.31.mlp.up_proj.weight]  Loading weights:  87%|████████▋ | 346/398 [00:00<00:00, 385.78it/s, Materializing param=model.layers.31.mlp.up_proj.weight]Loading weights:  87%|████████▋ | 347/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.mlp.up_proj.weight]Loading weights:  87%|████████▋ | 347/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.post_attention_layernorm.weight]Loading weights:  87%|████████▋ | 347/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.post_attention_layernorm.weight]Loading weights:  87%|████████▋ | 348/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.k_norm.weight]        Loading weights:  87%|████████▋ | 348/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.k_norm.weight]Loading weights:  88%|████████▊ | 349/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.k_proj.weight]Loading weights:  88%|████████▊ | 349/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.k_proj.weight]Loading weights:  88%|████████▊ | 350/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.o_proj.weight]Loading weights:  88%|████████▊ | 350/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.o_proj.weight]Loading weights:  88%|████████▊ | 351/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.q_norm.weight]Loading weights:  88%|████████▊ | 351/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.q_norm.weight]Loading weights:  88%|████████▊ | 352/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.q_proj.weight]Loading weights:  88%|████████▊ | 352/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.q_proj.weight]Loading weights:  89%|████████▊ | 353/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.v_proj.weight]Loading weights:  89%|████████▊ | 353/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.31.self_attn.v_proj.weight]Loading weights:  89%|████████▉ | 354/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.input_layernorm.weight] Loading weights:  89%|████████▉ | 354/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.input_layernorm.weight]Loading weights:  89%|████████▉ | 355/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.mlp.down_proj.weight]  Loading weights:  89%|████████▉ | 355/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.mlp.down_proj.weight]Loading weights:  89%|████████▉ | 356/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.mlp.gate_proj.weight]Loading weights:  89%|████████▉ | 356/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.mlp.gate_proj.weight]Loading weights:  90%|████████▉ | 357/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.mlp.up_proj.weight]  Loading weights:  90%|████████▉ | 357/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.mlp.up_proj.weight]Loading weights:  90%|████████▉ | 358/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.post_attention_layernorm.weight]Loading weights:  90%|████████▉ | 358/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.post_attention_layernorm.weight]Loading weights:  90%|█████████ | 359/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.k_norm.weight]        Loading weights:  90%|█████████ | 359/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.k_norm.weight]Loading weights:  90%|█████████ | 360/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.k_proj.weight]Loading weights:  90%|█████████ | 360/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.k_proj.weight]Loading weights:  91%|█████████ | 361/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.o_proj.weight]Loading weights:  91%|█████████ | 361/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.o_proj.weight]Loading weights:  91%|█████████ | 362/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.q_norm.weight]Loading weights:  91%|█████████ | 362/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.q_norm.weight]Loading weights:  91%|█████████ | 363/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.q_proj.weight]Loading weights:  91%|█████████ | 363/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.q_proj.weight]Loading weights:  91%|█████████▏| 364/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.v_proj.weight]Loading weights:  91%|█████████▏| 364/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.32.self_attn.v_proj.weight]Loading weights:  92%|█████████▏| 365/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.input_layernorm.weight] Loading weights:  92%|█████████▏| 365/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.input_layernorm.weight]Loading weights:  92%|█████████▏| 366/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.mlp.down_proj.weight]  Loading weights:  92%|█████████▏| 366/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.mlp.down_proj.weight]Loading weights:  92%|█████████▏| 367/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.mlp.gate_proj.weight]Loading weights:  92%|█████████▏| 367/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.mlp.gate_proj.weight]Loading weights:  92%|█████████▏| 368/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.mlp.up_proj.weight]  Loading weights:  92%|█████████▏| 368/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.mlp.up_proj.weight]Loading weights:  93%|█████████▎| 369/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.post_attention_layernorm.weight]Loading weights:  93%|█████████▎| 369/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.post_attention_layernorm.weight]Loading weights:  93%|█████████▎| 370/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.k_norm.weight]        Loading weights:  93%|█████████▎| 370/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.k_norm.weight]Loading weights:  93%|█████████▎| 371/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.k_proj.weight]Loading weights:  93%|█████████▎| 371/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.k_proj.weight]Loading weights:  93%|█████████▎| 372/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.o_proj.weight]Loading weights:  93%|█████████▎| 372/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.o_proj.weight]Loading weights:  94%|█████████▎| 373/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.q_norm.weight]Loading weights:  94%|█████████▎| 373/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.q_norm.weight]Loading weights:  94%|█████████▍| 374/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.q_proj.weight]Loading weights:  94%|█████████▍| 374/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.q_proj.weight]Loading weights:  94%|█████████▍| 375/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.v_proj.weight]Loading weights:  94%|█████████▍| 375/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.33.self_attn.v_proj.weight]Loading weights:  94%|█████████▍| 376/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.34.input_layernorm.weight] Loading weights:  94%|█████████▍| 376/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.34.input_layernorm.weight]Loading weights:  95%|█████████▍| 377/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.34.mlp.down_proj.weight]  Loading weights:  95%|█████████▍| 377/398 [00:00<00:00, 383.23it/s, Materializing param=model.layers.34.mlp.down_proj.weight]Loading weights:  95%|█████████▍| 378/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.mlp.gate_proj.weight]Loading weights:  95%|█████████▍| 378/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.mlp.gate_proj.weight]Loading weights:  95%|█████████▌| 379/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.mlp.up_proj.weight]  Loading weights:  95%|█████████▌| 379/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.mlp.up_proj.weight]Loading weights:  95%|█████████▌| 380/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.post_attention_layernorm.weight]Loading weights:  95%|█████████▌| 380/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.post_attention_layernorm.weight]Loading weights:  96%|█████████▌| 381/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.k_norm.weight]        Loading weights:  96%|█████████▌| 381/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.k_norm.weight]Loading weights:  96%|█████████▌| 382/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.k_proj.weight]Loading weights:  96%|█████████▌| 382/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.k_proj.weight]Loading weights:  96%|█████████▌| 383/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.o_proj.weight]Loading weights:  96%|█████████▌| 383/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.o_proj.weight]Loading weights:  96%|█████████▋| 384/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.q_norm.weight]Loading weights:  96%|█████████▋| 384/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.q_norm.weight]Loading weights:  97%|█████████▋| 385/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.q_proj.weight]Loading weights:  97%|█████████▋| 385/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.q_proj.weight]Loading weights:  97%|█████████▋| 386/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.v_proj.weight]Loading weights:  97%|█████████▋| 386/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.34.self_attn.v_proj.weight]Loading weights:  97%|█████████▋| 387/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.35.input_layernorm.weight] Loading weights:  97%|█████████▋| 387/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.35.input_layernorm.weight]Loading weights:  97%|█████████▋| 388/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.35.mlp.down_proj.weight]  Loading weights:  97%|█████████▋| 388/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.35.mlp.down_proj.weight]Loading weights:  98%|█████████▊| 389/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.35.mlp.gate_proj.weight]Loading weights:  98%|█████████▊| 389/398 [00:01<00:00, 383.23it/s, Materializing param=model.layers.35.mlp.gate_proj.weight]Loading weights:  98%|█████████▊| 390/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.mlp.gate_proj.weight]Loading weights:  98%|█████████▊| 390/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.mlp.up_proj.weight]  Loading weights:  98%|█████████▊| 390/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.mlp.up_proj.weight]Loading weights:  98%|█████████▊| 391/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.post_attention_layernorm.weight]Loading weights:  98%|█████████▊| 391/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.post_attention_layernorm.weight]Loading weights:  98%|█████████▊| 392/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.k_norm.weight]        Loading weights:  98%|█████████▊| 392/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.k_norm.weight]Loading weights:  99%|█████████▊| 393/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.k_proj.weight]Loading weights:  99%|█████████▊| 393/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.k_proj.weight]Loading weights:  99%|█████████▉| 394/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.o_proj.weight]Loading weights:  99%|█████████▉| 394/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.o_proj.weight]Loading weights:  99%|█████████▉| 395/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.q_norm.weight]Loading weights:  99%|█████████▉| 395/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.q_norm.weight]Loading weights:  99%|█████████▉| 396/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.q_proj.weight]Loading weights:  99%|█████████▉| 396/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.q_proj.weight]Loading weights: 100%|█████████▉| 397/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.v_proj.weight]Loading weights: 100%|█████████▉| 397/398 [00:01<00:00, 391.83it/s, Materializing param=model.layers.35.self_attn.v_proj.weight]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 391.83it/s, Materializing param=model.norm.weight]                      Loading weights: 100%|██████████| 398/398 [00:01<00:00, 391.83it/s, Materializing param=model.norm.weight]Loading weights: 100%|██████████| 398/398 [00:01<00:00, 378.02it/s, Materializing param=model.norm.weight]
+[21:03:50] INFO: HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3-4B/resolve/main/generation_config.json "HTTP/1.1 307 Temporary Redirect"
+[21:03:50] INFO: HTTP Request: HEAD https://huggingface.co/api/resolve-cache/models/Qwen/Qwen3-4B/1cfa9a7208912126459214e8b04321603b3df60c/generation_config.json "HTTP/1.1 200 OK"
+[21:03:50] INFO: HTTP Request: HEAD https://huggingface.co/Qwen/Qwen3-4B/resolve/main/custom_generate/generate.py "HTTP/1.1 404 Not Found"
+[21:03:50] INFO: Model loaded.
+[21:03:50] INFO: 
+[21:03:50] INFO: --- Single-agent (paper-aligned: same prompt + decoding as MAS) ---
+[21:03:50] INFO:   [single_agent_paper] example 1/4 ...
+[21:04:03] INFO:   [single_agent_paper] ex 1: extracted=18 | gold=18 | correct=True
+[21:04:03] INFO:   [single_agent_paper] ex 1 output (last 500 chars): d minus the ones she uses. That would be 16 - 7 = 9 eggs per day.
+
+Each egg is sold for $2. So 9 eggs times $2 is 9 * 2 = $18. So she makes $18 every day at the market. Let me check again. 16 total, subtract 3 and 4, which is 7. 16-7=9. 9 times 2 is 18. Yeah, that seems right.
+</think>
+
+Janet's ducks lay 16 eggs daily. She uses 3 eggs for breakfast and 4 eggs for muffins, totaling 3 + 4 = 7 eggs. Remaining eggs for sale: 16 - 7 = 9. At $2 per egg, her daily earnings are 9 × 2 = 18.  
+
+\boxed{18}
+[21:04:03] INFO:   [single_agent_paper] example 2/4 ...
+[21:04:11] INFO:   [single_agent_paper] ex 2: extracted=3 | gold=3 | correct=True
+[21:04:11] INFO:   [single_agent_paper] ex 2 output (last 500 chars): blue fiber part is straightforward: 2 bolts. Then the white fiber is half of that. So half of 2 bolts would be 1 bolt. Then add them together: 2 blue plus 1 white equals 3 bolts total. Wait, that seems simple. Let me check again. Half of 2 is indeed 1. So 2 + 1 is 3. Yeah, I think that's right. The answer should be 3.
+</think>
+
+The robe requires 2 bolts of blue fiber. The white fiber is half that amount, which is $ \frac{2}{2} = 1 $ bolt. Adding both amounts together: $ 2 + 1 = 3 $.  
+
+\boxed{3}
+[21:04:11] INFO:   [single_agent_paper] example 3/4 ...
+[21:04:50] INFO:   [single_agent_paper] ex 3: extracted=70000 | gold=70000 | correct=True
+[21:04:50] INFO:   [single_agent_paper] ex 3 output (last 500 chars): gain.
+
+Original cost: 80k. Repairs: 50k. Total cost: 130k. Value after repairs: 200k. Profit is 200k - 130k = 70k. Yes, that's correct. So the answer is 70000.
+</think>
+
+Josh bought the house for $80,000 and spent $50,000 on repairs, making his total cost $130,000. The repairs increased the house's value by 150% of its original value, so the new value is $80,000 + 1.5 × $80,000 = $200,000. Profit is calculated as the selling value minus total cost: $200,000 - $130,000 = $70,000.  
+
+\boxed{70000}
+[21:04:50] INFO:   [single_agent_paper] example 4/4 ...
+[21:05:00] INFO:   [single_agent_paper] ex 4: extracted=540 | gold=540 | correct=True
+[21:05:00] INFO:   [single_agent_paper] ex 4 output (last 500 chars): sprint is 60 meters. So total meters would be the number of sprints multiplied by 60. So 9 sprints times 60 meters each. Let me calculate that. 9 times 60 is 540. So he runs 540 meters a week. Wait, let me check again. 3 sprints a day for 3 days is 9 sprints. Each sprint is 60 meters. 9 times 60 is indeed 540. Yeah, that seems right.
+</think>
+
+James runs 3 sprints per day for 3 days, totaling $3 \times 3 = 9$ sprints weekly. Each sprint is 60 meters, so $9 \times 60 = 540$ meters.  
+
+\boxed{540}
+[21:05:00] INFO:   [single_agent_paper] DONE: accuracy=100.00%, tokens=1732, time=70s
+[21:05:00] INFO:   Saved to results/results_qwen3_4b_4.json
+[21:05:00] INFO: 
+[21:05:00] INFO: --- Sequential TextMAS (4-agent text: Planner -> Critic -> Refiner -> Judger) ---
+[21:05:00] INFO:   [sequential_text_mas] example 1/4 ...
+[21:06:03] INFO:   [sequential_text_mas] ex 1: extracted=18 | gold=18 | correct=True
+[21:06:03] INFO:   [sequential_text_mas] ex 1 output (last 500 chars): y at the market. 
+
+Wait, let me check again. 16 total eggs. 3 for breakfast, 4 for muffins. 3+4 is 7. 16-7 is 9. Yep, that's right. 9 eggs times $2 is $18. Yep, that seems correct. I don't think I missed anything here. The remainder is definitely 9, and the calculation is straightforward. So the answer should be 18.
+</think>
+
+Janet's ducks lay 16 eggs daily. She uses 3 for breakfast and 4 for muffins, leaving $16 - 3 - 4 = 9$ eggs. Selling these at $2 each yields $9 \times 2 = 18$.  
+
+\boxed{18}
+[21:06:03] INFO:   [sequential_text_mas] example 2/4 ...
+[21:06:53] INFO:   [sequential_text_mas] ex 2: extracted=3 | gold=3 | correct=True
+[21:06:53] INFO:   [sequential_text_mas] ex 2 output (last 500 chars): tion seems straightforward, but I should double-check to ensure there's no ambiguity. The key part is understanding that "half that much" applies specifically to the blue fiber, not any other quantity mentioned. Since the problem is simple, there's no need for complex steps, just basic arithmetic. 
+
+So, the final answer should be 3 bolts.
+</think>
+
+The robe requires 2 bolts of blue fiber. White fiber is half of that, so $ \frac{1}{2} \times 2 = 1 $ bolt. Total bolts = $ 2 + 1 = 3 $.  
+
+\boxed{3}
+[21:06:53] INFO:   [sequential_text_mas] example 3/4 ...
+[21:08:31] INFO:   [sequential_text_mas] ex 3: extracted=70000 | gold=70000 | correct=True
+[21:08:31] INFO:   [sequential_text_mas] ex 3 output (last 500 chars): ase is on the original value, not the repair costs. So the repairs themselves cost $50k, but the value increase is 150% of the original $80k. So yes, the calculation seems right. The profit is $70,000. I think that's correct.
+</think>
+
+The total investment is $80,000 (purchase) + $50,000 (repairs) = $130,000. The house's value increased by 150% of its original value: $80,000 × 1.5 = $120,000. The new value is $80,000 + $120,000 = $200,000. Profit = $200,000 - $130,000 = $70,000.  
+
+\boxed{70000}
+[21:08:31] INFO:   [sequential_text_mas] example 4/4 ...
+[21:09:23] INFO:   [sequential_text_mas] ex 4: extracted=540 | gold=540 | correct=True
+[21:09:23] INFO:   [sequential_text_mas] ex 4 output (last 500 chars): Next, each sprint is 60 meters. So, to find the total meters, I multiply the number of sprints by the distance per sprint. That's 9 sprints × 60 meters/sprint. Let me do that math: 9 × 60. Well, 9 × 60 is the same as 9 × 6 × 10, which is 54 × 10 = 540. So, 540 meters in total.
+
+Wait, let me double-check. 3 sprints a day for 3 days is indeed 9 sprints. Each sprint is 60 meters, so 9 × 60. Yeah, that's 540. I think that's right. No steps missed here. The answer should be 540.
+</think>
+
+\boxed{540}
+[21:09:23] INFO:   [sequential_text_mas] DONE: accuracy=100.00%, tokens=6577, time=262s
+[21:09:23] INFO:   Saved to results/results_qwen3_4b_4.json
+[21:09:23] INFO: 
+[21:09:23] INFO: --- Sequential LatentMAS (Planner -> Critic -> Refiner -> Judger) ---
+[21:09:23] INFO:   [sequential_latent_mas] example 1/4 ...
+[21:09:43] INFO:   [sequential_latent_mas] ex 1: extracted=18 | gold=18 | correct=True
+[21:09:43] INFO:   [sequential_latent_mas] ex 1 output (last 500 chars): has left after she uses some for breakfast and muffins. The ducks lay 16 eggs a day. She eats 3 each morning. Then she uses 4 eggs for muffins every day. So the total eggs used per day would be 3 + 4, which is 7. Subtract
+
+Subtracting that from the total eggs: 16 - 7 = 9 eggs left. Then she sells each of those at $2. So 9 eggs times $2 is $18. That should be the answer. Let me check again. 16 total, 3 eaten, 4 for muffins, 7 total used. 16-7=9. 9*2=18. Yep
+
+The final answer is 18. So, \boxed{18}
+[21:09:43] INFO:   [sequential_latent_mas] example 2/4 ...
+[21:11:13] INFO:   [sequential_latent_mas] ex 2: extracted=None | gold=3 | correct=False
+[21:11:13] INFO:   [sequential_latent_mas] ex 2 output (last 500 chars): 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+let
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+let
+[21:11:13] INFO:   [sequential_latent_mas] example 3/4 ...
+[21:11:47] INFO:   [sequential_latent_mas] ex 3: extracted=70000 | gold=70000 | correct=True
+[21:11:47] INFO:   [sequential_latent_mas] ex 3 output (last 500 chars): , which is 200k. Then, the total cost is 80k + 50k = 130k. So profit is 200k - 130k = 70k. That seems right. So the answer should be 70,000.
+</think>
+
+Josh's total cost is the purchase price plus repairs: $80,000 + $50,000 = $130,000. The house's value increased by 150% of its original value: 150% × $80,000 = $120,000. The selling price is the original value plus the increase: $80,000 + $120,000 = $200,000. Profit is selling price minus total cost: $200,000 - $130,000 = $70,000.  
+
+\boxed{70000}
+[21:11:47] INFO:   [sequential_latent_mas] example 4/4 ...
+[21:12:02] INFO:   [sequential_latent_mas] ex 4: extracted=540 | gold=540 | correct=True
+[21:12:02] INFO:   [sequential_latent_mas] ex 4 output (last 500 chars):  days, which is 9 sprints total. Then, each sprint is 60 meters, so multiply 9 by 60. Let me check that again. 3 sprints times 3 days is indeed 9 sprints. 9 sprints times 60 meters each would be 540 meters. Hmm, that seems right. I don't think I missed anything here. The calculation is straightforward multiplication. So the answer should be 540.
+</think>
+
+James runs 3 sprints 3 times a week, totaling $3 \times 3 = 9$ sprints. Each sprint is 60 meters, so $9 \times 60 = 540$ meters.  
+\boxed{540}
+[21:12:02] INFO:   [sequential_latent_mas] DONE: accuracy=75.00%, tokens=3171, time=160s
+[21:12:02] INFO:   Saved to results/results_qwen3_4b_4.json
+[21:12:02] INFO: 
+[21:12:02] INFO: ============================================================
+[21:12:02] INFO: SUMMARY (n=4)
+[21:12:02] INFO: ============================================================
+[21:12:02] INFO:   single_agent_paper: accuracy=100.00%, total_tokens=1732
+[21:12:02] INFO:   sequential_text_mas: accuracy=100.00%, total_tokens=6577
+[21:12:02] INFO:   sequential_latent_mas: accuracy=75.00%, total_tokens=3171
+[21:12:02] INFO: ============================================================
+[21:12:02] INFO: Results written to results/results_qwen3_4b_4.json
